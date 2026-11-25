@@ -25,6 +25,7 @@ REQUIRED_FILES: list[str] = [
     "skills/book-forge/references/drafting.md",
     "skills/book-forge/references/roles/researcher.md",
     "skills/book-forge/references/roles/drafter.md",
+    "skills/book-forge/references/passes.md",
 ]
 
 REQUIRED_HEADERS: dict[str, list[str]] = {
@@ -108,6 +109,14 @@ REQUIRED_HEADERS: dict[str, list[str]] = {
         "## Routine",
         "## Output contract",
         "## Never",
+    ],
+    "skills/book-forge/references/passes.md": [
+        "## Pass order and per-mode scope",
+        "## How each pass runs",
+        "## Contradiction protocol",
+        "## facts-index resync",
+        "## Diff registries",
+        "## Gate — protocol (b)",
     ],
 }
 
@@ -198,6 +207,20 @@ REQUIRED_SUBSTRINGS: dict[str, list[str]] = {
         "never edit approved chapters",
         "bible.md",
         "one chapter",
+    ],
+    "skills/book-forge/references/passes.md": [
+        "structure → continuity → style/voice → grammar → spelling",
+        "style/voice → continuity → grammar → spelling",
+        "one chapter per dispatch",
+        "only the chapters in error",
+        "stop and ask the user",
+        "resync facts-index",
+        "passes/registry-",
+        "macro to micro",
+        "aggregated by the orchestrator",
+        "passes/registry-<pass>/ch-NN.md",
+        "sliding window",
+        "stabilization (phase 1)",
     ],
 }
 

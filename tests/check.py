@@ -26,6 +26,9 @@ REQUIRED_FILES: list[str] = [
     "skills/book-forge/references/roles/researcher.md",
     "skills/book-forge/references/roles/drafter.md",
     "skills/book-forge/references/passes.md",
+    "skills/book-forge/references/roles/structure-editor.md",
+    "skills/book-forge/references/roles/continuity-checker.md",
+    "skills/book-forge/references/roles/copy-editor.md",
 ]
 
 REQUIRED_HEADERS: dict[str, list[str]] = {
@@ -117,6 +120,27 @@ REQUIRED_HEADERS: dict[str, list[str]] = {
         "## facts-index resync",
         "## Diff registries",
         "## Gate — protocol (b)",
+    ],
+    "skills/book-forge/references/roles/structure-editor.md": [
+        "## Identity",
+        "## Inputs",
+        "## Pass routine",
+        "## Output contract",
+        "## Never",
+    ],
+    "skills/book-forge/references/roles/continuity-checker.md": [
+        "## Identity",
+        "## Inputs",
+        "## Pass routine",
+        "## Output contract",
+        "## Never",
+    ],
+    "skills/book-forge/references/roles/copy-editor.md": [
+        "## Identity",
+        "## Inputs",
+        "## Pass routine",
+        "## Output contract",
+        "## Never",
     ],
 }
 
@@ -221,6 +245,26 @@ REQUIRED_SUBSTRINGS: dict[str, list[str]] = {
         "passes/registry-<pass>/ch-NN.md",
         "sliding window",
         "stabilization (phase 1)",
+    ],
+    "skills/book-forge/references/roles/structure-editor.md": [
+        "chapter cohesion",
+        "the book flow",
+        "do not write meta.json",
+        "passes/registry-structure.md",
+    ],
+    "skills/book-forge/references/roles/continuity-checker.md": [
+        "facts-index.md",
+        "contradiction",
+        "do not write meta.json",
+        "passes/registry-continuity.md",
+    ],
+    "skills/book-forge/references/roles/copy-editor.md": [
+        "style/voice",
+        "grammar",
+        "spelling",
+        "do not write meta.json",
+        "respect the voice: do not flatten intentional diction",
+        "passes/registry-<pass>/ch-NN.md",
     ],
 }
 

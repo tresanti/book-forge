@@ -10,7 +10,7 @@ Ask one question at a time and wait for the answer before asking the next: a wal
 Ask in the user's own language, detected from the conversation so far; only the enum values and the file names you record stay English. The pinned rule from `SKILL.md` applies unchanged here: one question at a time.
 No editorial jargon without explaining it in plain words the first time you use it — "beta reader", "POV", "arc", "style guide" all need a half-sentence of translation. When in doubt, ask the plain question and name the term afterwards.
 Never ask what you can already infer. If the user volunteered "I've got eleven chapters in Word and I hate the ending", you do not ask whether a manuscript exists; you confirm the inference and move on.
-Record each answer as you receive it, in your own notes for the session; the durable record is written once, at the end, in `meta.json`.
+Record each answer as you receive it — but not in session memory alone. The schema fields go to `meta.json` at the end of the interview (`references/state.md`); the audience, central promise and voice answers, which the schema has no key for, are carried into `bible.md` when the bible phase starts, so nothing the user told you survives only in this conversation.
 Keep the interview short. Twenty questions is the ceiling for a book that does not exist yet, and far fewer when the user arrives with material.
 
 ## Step 1 — identify the job
@@ -69,7 +69,6 @@ Then:
 - Promises per part — what each part of the book promises to deliver, so the outline can be checked against it at Gate 1.
 - Exercises and examples — how many, of what kind, and whether the user has real cases to reuse. Real material from the user beats invented examples every time.
 - Tone register — direct and terse, or empathic and encouraging; who is speaking (a peer, a teacher, a coach).
-- Author's authority — the experience the book rests on, which the bible records as the ground for any claim you will later research or cite.
 
 ## Question topics — narrative nonfiction
 
@@ -79,7 +78,6 @@ Then:
 - Real people — who appears, under what name (their own, a changed name, initials), and which sensibilities or privacy limits apply. Ask explicitly whether anyone must be protected, and record it as a hard constraint on the canon.
 - The theme — what the book is about under the surface of the events: why this story, why now, what the reader should carry away.
 - Narrative texture — how much reconstructed scene, dialogue and interiority the user wants against bare reportage. The honest answer matters: heavy scene-writing over thin recollection creates facts that did not happen.
-- Evidence on hand — documents, journals, recordings, correspondence the user already owns, which go to `research/` and shorten the rest of the interview.
 
 ## Raw material
 

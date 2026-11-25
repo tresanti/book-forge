@@ -40,6 +40,8 @@ From its one chapter, each dispatch extracts and appends:
 - style observations — how the chapter sounds, with two or three sample sentences quoted as evidence, never as instruction;
 - contradictions, as they emerge.
 
+During the sweep the Duty-B dispatch WRITES both continuity artefacts itself — it appends its provisional rows to `continuity/facts-index.md` and writes its chapter's handoff into `continuity/window/` — as the single declared exception to the rule of `references/ledger.md` that only the Continuity-checker writes them, declared in the same terms as the `PROVISIONAL` carve-out that file already carries; outside the sweep, only the Continuity-checker writes them.
+
 Contradictions are the reason the sweep is worth running chapter by chapter. When chapter 12 says something chapter 04 denied, the dispatch records both versions with both provenances — `[ch.04]` says X, `[ch.12]` says Y — and moves on. The sweep REGISTERS contradictions and never resolves them: a resolved contradiction is a canon decision, canon decisions belong to the user, and a subagent that picks the more plausible version has silently rewritten the book. They surface at Gate 1 for the user to rule on, or later through the contradiction protocol of `references/passes.md` when a pass uncovers one the sweep could not see.
 
 `PROVISIONAL` is a status, not a mood: every row the sweep adds stays `provisional` until the user validates the reconstructed bible at Gate 1, and only then does it become `canon` or `superseded` (the carve-out is declared in `references/ledger.md`, which owns the rule; this file only uses it).
@@ -76,6 +78,8 @@ The bookkeeping order is fixed and invariant C5 enforces it:
 - the stabilization passes run to completion over 1..M;
 - the orchestrator then registers chapters M+1..N in `meta.json.chapters`, each with `status: "planned"` and `origin: "written"`, and sets both `stabilization` fields to `done`;
 - ONLY THEN does `phase` become `"chapters"`.
+
+`phase` stays `bible` for the whole stabilization run, and stabilization is tracked ONLY in the `stabilization` block — plus the passes engine's own per-pass registry entries where they apply — NEVER in `pass_scope` or `pass_progress`: those fields are initialized at the entry into `passes`, where C6 binds `complete` to the full five-pass scope, and a two-pass stabilization is not that run.
 
 Drafting a new chapter before stabilization is `done` is a state the machine rejects (C5), and it is also the mistake the rule exists to prevent: a chapter M+1 written against an unstabilized book inherits every contradiction and every broken structure of chapters 1..M, and the cost of fixing it later is the whole book.
 

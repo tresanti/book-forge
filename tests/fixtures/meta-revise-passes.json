@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "project": { "title": "Small Gardens, Deep Roots", "slug": "small-gardens-deep-roots", "language": "en", "created": "2026-11-25" },
+  "work_mode": "revise",
+  "genre_profile": "practical_nonfiction",
+  "validation_mode": { "type": "chapter" },
+  "phase": "passes",
+  "flags": { "awaiting_fresh_session": false, "degraded_non_independent": false, "web_available": true },
+  "gates": { "bible_approved": true, "passes_approved": false, "final_approved": false },
+  "chapters": [
+    { "number": 1, "file": "manuscript/01-soil.md", "title": "Soil", "status": "imported", "origin": "imported" },
+    { "number": 2, "file": "manuscript/02-seeds.md", "title": "Seeds", "status": "imported", "origin": "imported" },
+    { "number": 3, "file": "manuscript/03-water.md", "title": "Water", "status": "imported", "origin": "imported" },
+    { "number": 4, "file": "manuscript/04-pruning.md", "title": "Pruning", "status": "imported", "origin": "imported" }
+  ],
+  "continuity_window": 3,
+  "pass_scope": ["continuity", "grammar", "spelling"],
+  "pass_progress": { "continuity": "done", "grammar": "in_progress", "spelling": "pending" }
+}

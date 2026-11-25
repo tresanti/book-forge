@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "project": { "title": "The Lighthouse Road", "slug": "the-lighthouse-road", "language": "en", "created": "2026-11-25" },
+  "work_mode": "create",
+  "genre_profile": "fiction",
+  "validation_mode": { "type": "blocks", "block_size": 1 },
+  "phase": "intake",
+  "flags": { "awaiting_fresh_session": false, "degraded_non_independent": false, "web_available": null },
+  "gates": { "bible_approved": false, "passes_approved": false, "final_approved": false },
+  "chapters": [],
+  "continuity_window": 3
+}

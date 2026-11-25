@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "project": { "title": "The Lighthouse Road", "slug": "the-lighthouse-road", "language": "en", "created": "2026-11-25" },
+  "work_mode": "create",
+  "genre_profile": "fiction",
+  "validation_mode": { "type": "blocks", "block_size": 3 },
+  "phase": "chapters",
+  "flags": { "awaiting_fresh_session": false, "degraded_non_independent": false, "web_available": false },
+  "gates": { "bible_approved": true, "passes_approved": false, "final_approved": false },
+  "chapters": [
+    { "number": 1, "file": "manuscript/01-the-pact.md", "title": "The Pact", "status": "approved", "origin": "written" },
+    { "number": 2, "file": "manuscript/02-the-storm.md", "title": "The Storm", "status": "approved", "origin": "written" },
+    { "number": 3, "file": "manuscript/03-the-wreck.md", "title": "The Wreck", "status": "user_review", "origin": "written" }
+  ],
+  "continuity_window": 3,
+  "length_target": { "words": 90000, "chapters": 30 }
+}

@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "project": { "title": "Cronache di Ghiaccio", "slug": "cronache-di-ghiaccio", "language": "it", "created": "2026-11-25" },
+  "work_mode": "restyle",
+  "genre_profile": "fiction",
+  "validation_mode": { "type": "blocks", "block_size": 5 },
+  "phase": "final_review",
+  "flags": { "awaiting_fresh_session": true, "degraded_non_independent": true, "web_available": false },
+  "gates": { "bible_approved": true, "passes_approved": true, "final_approved": false },
+  "chapters": [
+    { "number": 1, "file": "manuscript/01-prima-inverno.md", "title": "Prima dell'inverno", "status": "imported", "origin": "imported" },
+    { "number": 2, "file": "manuscript/02-la-caccia.md", "title": "La caccia", "status": "imported", "origin": "imported" },
+    { "number": 3, "file": "manuscript/03-il-patto.md", "title": "Il patto", "status": "imported", "origin": "imported" },
+    { "number": 4, "file": "manuscript/04-il-thaw.md", "title": "Il thaw", "status": "imported", "origin": "imported" },
+    { "number": 5, "file": "manuscript/05-dopo.md", "title": "Dopo", "status": "imported", "origin": "imported" }
+  ],
+  "continuity_window": 4,
+  "pass_scope": ["style", "continuity", "grammar", "spelling"],
+  "pass_progress": { "style": "done", "continuity": "done", "grammar": "done", "spelling": "done" }
+}

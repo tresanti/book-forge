@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://book-forge.dev/skills/book-forge/meta.schema.json",
+  "title": "book-forge project meta.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "project", "work_mode", "genre_profile", "validation_mode", "phase", "flags", "gates", "chapters", "continuity_window"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "slug", "language", "created"],
+      "properties": {
+        "title": { "type": "string", "minLength": 1 },
+        "slug": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+        "language": { "type": "string", "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$" },
+        "created": { "type": "string", "format": "date" }
+      }
+    },
+    "work_mode": { "enum": ["create", "complete", "revise", "restyle"] },
+    "genre_profile": { "enum": ["fiction", "practical_nonfiction", "narrative_nonfiction"] },
+    "validation_mode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "enum": ["chapter", "blocks"] },
+        "block_size": { "type": "integer", "minimum": 2 }
+      },
+      "if": { "properties": { "type": { "const": "blocks" } }, "required": ["type"] },
+      "then": { "required": ["block_size"] }
+    },
+    "phase": { "enum": ["intake", "bible", "chapters", "passes", "final_review", "export", "done"] },
+    "flags": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["awaiting_fresh_session", "degraded_non_independent", "web_available"],
+      "properties": {
+        "awaiting_fresh_session": { "type": "boolean" },
+        "degraded_non_independent": { "type": "boolean" },
+        "web_available": { "type": ["boolean", "null"] }
+      }
+    },
+    "gates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bible_approved", "passes_approved", "final_approved"],
+      "properties": {
+        "bible_approved": { "type": "boolean" },
+        "passes_approved": { "type": "boolean" },
+        "final_approved": { "type": "boolean" }
+      }
+    },
+    "chapters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["number", "file", "title", "status", "origin"],
+        "properties": {
+          "number": { "type": "integer", "minimum": 1, "maximum": 99 },
+          "file": { "type": "string", "pattern": "^manuscript/\\d{2}-[a-z0-9]+(-[a-z0-9]+)*\\.md$" },
+          "title": { "type": "string" },
+          "status": { "enum": ["planned", "imported", "drafting", "user_review", "approved"] },
+          "origin": { "enum": ["written", "imported"] }
+        }
+      }
+    },
+    "continuity_window": { "type": "integer", "minimum": 2, "maximum": 10 },
+    "length_target": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "properties": {
+        "words": { "type": ["integer", "null"] },
+        "chapters": { "type": ["integer", "null"] }
+      }
+    },
+    "stabilization": {
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["structure", "continuity"],
+      "properties": {
+        "structure": { "enum": ["pending", "in_progress", "done"] },
+        "continuity": { "enum": ["pending", "in_progress", "done"] }
+      }
+    },
+    "pass_scope": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "enum": ["structure", "continuity", "style", "grammar", "spelling"] }
+    },
+    "pass_progress": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(structure|continuity|style|grammar|spelling)$": { "enum": ["pending", "in_progress", "done"] }
+      },
+      "minProperties": 1
+    },
+    "notes": { "type": "string" }
+  }
+}

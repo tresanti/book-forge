@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "project": { "title": "Il giardino dei ricordi", "slug": "il-giardino-dei-ricordi", "language": "it", "created": "2026-11-25" },
+  "work_mode": "complete",
+  "genre_profile": "narrative_nonfiction",
+  "validation_mode": { "type": "chapter" },
+  "phase": "bible",
+  "flags": { "awaiting_fresh_session": false, "degraded_non_independent": false, "web_available": false },
+  "gates": { "bible_approved": false, "passes_approved": false, "final_approved": false },
+  "chapters": [
+    { "number": 1, "file": "manuscript/01-radici.md", "title": "Radici", "status": "imported", "origin": "imported" },
+    { "number": 2, "file": "manuscript/02-la-casa-al-mare.md", "title": "La casa al mare", "status": "imported", "origin": "imported" },
+    { "number": 3, "file": "manuscript/03-partenze.md", "title": "Partenze", "status": "imported", "origin": "imported" }
+  ],
+  "continuity_window": 3,
+  "stabilization": { "structure": "pending", "continuity": "pending" }
+}

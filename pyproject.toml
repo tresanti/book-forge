@@ -1,0 +1,9 @@
+[project]
+name = "book-forge-dev"
+version = "0.1.0"
+description = "Development checks for the book-forge skill repository. Not shipped with the skill."
+requires-python = ">=3.11"
+dependencies = ["jsonschema>=4.23"]
+
+[tool.uv]
+package = false

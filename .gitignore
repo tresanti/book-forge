@@ -4,3 +4,5 @@ Thumbs.db
 node_modules/
 .worktrees/
 .superpowers/
+.venv/
+__pycache__/

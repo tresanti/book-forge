@@ -14,10 +14,12 @@ Micro means the intervention stays inside the sentence and the word. Two passes 
 
 - The chapter file you were dispatched — one file, and only that file.
 - `bible.md`, read for the part your pass needs. For `style/voice` it is the `## Style guide`, the normative section that says how this book must sound. For `spelling` it is the book's language and language variety, plus the `[opt] Domain glossary` — the terms the book has fixed for its own concepts. For `grammar` it is the voice's register, because grammatical choices the guide prescribes are not errors.
-- On `restyle`, the style pass ALSO carries `pilot.md`, the approved rewrite of the pilot chapter, as the few-shot anchor of the new voice (W4). Every style dispatch carries it, not only the first: an anchor given to chapter 01 and dropped by chapter 04 is a different voice from chapter 04 onward.
+- On `restyle`, the style pass ALSO carries `pilot.md`, the approved rewrite of the pilot chapter, as the few-shot anchor of the new voice (W4). Every style dispatch AFTER Gate 1 carries it, not only the first: an anchor given to chapter 01 and dropped by chapter 04 is a different voice from chapter 04 onward.
 - For `spelling`, the `character`, `place` and `term` rows of `continuity/facts-index.md` and the glossary. The index is the authority on how a name is spelled; you correct the chapter to the index, never the index to the chapter.
 
 You are not given the scope of the pass and do not need it: one dispatch, one file, one pass. A dispatch that arrives with two passes named, or with the manuscript as a folder, has misread the role — say so and do the one that is unambiguous.
+
+The one named exception is the pre-pilot restyle dispatch that `references/reconstruction.md` assigns to this role, which AUTHORS the pilot rather than applying it. There the anchor file exists nowhere yet, because that dispatch is what produces `pilot.md`; a long extract is a valid input in place of a chapter file when a whole chapter is unwieldy; and the canon and facts extracted from the ledger for that chapter ride as inputs in place of index rows — exactly three inputs, as `references/reconstruction.md` states, and nothing else of the old book. Every style dispatch after Gate 1 is back to the ordinary shape, with the approved `pilot.md` as its anchor.
 
 ## Pass routine
 

@@ -241,6 +241,8 @@ DESCRIPTION_MAX = 1024
 
 LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+?)\)")
 URL_RE = re.compile(r"^[a-z][a-z0-9+.-]*://")
+FENCE_RE = re.compile(r"`{3}.*?`{3}", re.DOTALL)
+CODE_SPAN_RE = re.compile(r"`[^`\n]*`")
 
 # ---- checks ----------------------------------------------------------------
 
@@ -302,12 +304,18 @@ def check_substrings(errors: list[str]) -> None:
                 errors.append(f"{rel}: missing pinned string {needle!r}")
 
 
+def strip_code(text: str) -> str:
+    """Drop fenced code blocks and inline code spans: the link-check judges
+    prose markdown, never link examples quoted inside code."""
+    return CODE_SPAN_RE.sub(" ", FENCE_RE.sub(" ", text))
+
+
 def check_links(errors: list[str]) -> None:
     for path in sorted(ROOT.rglob("*.md")):
         if ".git" in path.parts or "node_modules" in path.parts or "graphify-out" in path.parts:
             continue
         rel = path.relative_to(ROOT).as_posix()
-        for target in LINK_RE.findall(read(rel)):
+        for target in LINK_RE.findall(strip_code(read(rel))):
             if URL_RE.match(target) or target.startswith("/"):
                 continue  # remote URLs and repo-absolute links: out of scope
             target = target.split("#", 1)[0]
@@ -340,7 +348,7 @@ if __name__ == "__main__":
 - [ ] **Step 2: Smoke dell'harness**
 
 Run: `uv run tests/check.py`
-Expected: `OK — all checks passed` (registri vuoti; frontmatter-check su SKILL.md ancora inesistente → skippato; link-check gira sui .md preesistenti di `docs/`, che non contengono link relativi — verifica fatta 2026-11-25).
+Expected: `OK — all checks passed` (registri vuoti; frontmatter-check su SKILL.md ancora inesistente → skippato; link-check gira sui .md di `docs/` DOPO `strip_code`: gli esempi tra backtick o dentro fence NON sono link da validare — piano e verbali contengono esempi inline-code legittimi, vedi Amendamento 4).
 
 - [ ] **Step 3: Smoke negativo — fidarsi dell'harness**
 
@@ -1702,3 +1710,5 @@ git commit -m "docs: README — jobs, pipeline, install (skills.sh / pi / Claude
   - **Warning O6 — transizioni fase 4 e invarianti** — state.md regole 3 e 8 estese (riconoscimento sessione fresca + retrocessione controllata final_review→passes + batching inline su più sessioni fresche); final-review: esclude anche `nor its Phase 3 editor` dello stesso capitolo; C5 esteso a tutte le fasi post-stabilizzazione (vieta di retrocedere da `done`); C7 vieta `planned` da `passes` in poi; passes.md: guardia STOP-file aperti (B1) + dispatch mirato sul capitolo precedente.
   - **Warning O7 — igiene di esecuzione e portabilità** — Note di esecuzione: path inline-code GLOBALI (forward-reference Task 5→6/6→9/8→9/9→11) e Task 1–15 STRICTLY SEQUENTIAL; drafting.md fallback one-shot stateless di `the same drafter` (la continuità vive nei file, non nell'istanza); slug ASCII con translitterazione (fallback `chapter-NN`); regex `project.language` allargata a `^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$` (accetta BCP-47 tipo `zh-Hans`, `es-419`); README allineato al comando spec `npx skills add <owner>/book-forge@book-forge` con verifica ref a publish-time; refusi residui puliti (Task 6 «Aggiornare… NO:», Task 13 «kk:").
   - **Impatto fixture: zero** — nessuna delle 12 fixture cambia esito o motivo esclusivo di rifiuto (desk-check: complete è `phase: bible`; nessuna valida ha `planned` in fasi post-capitoli; le C5/C7 estese aggiungono solo vincoli a stati finora non campionati).
+- **2026-11-25 · Amendamento 4** (escalation worker Task 2, confermata dall'autore):
+  - **Task 2 — `check_links` ignora il codice quotato** — aggiunti `FENCE_RE` (`` r"`{3}.*?`{3}`, re.DOTALL ``) e `CODE_SPAN_RE` (` `` r"`[^`\n]*`" ``) + funzione `strip_code(text)` applicata al testo PRIMA di estrarre i link: fenced block e inline code span non sono prosa markdown e i loro esempi `[x](path)` non vanno validati. Motivo: il piano stesso (Amendamento 3, regola inline-code) e il verbale oracle contengono esempi inline-code legittimi che il LINK_RE naive segnava come link rotti (`docs/superpowers/plans/2026-11-25-book-forge-skill.md:1678`, `…oracle-plan-freeze-verdict.md:92`) — l'assunzione "docs senza link relativi" del pre-piano era stata invalidata dagli artefatti post-freeze. Expected dello Step 2 invariato (`OK — all checks passed`). — Se l'emendamento fosse sbagliato: costo = un link rotto reale dentro un code span non verrebbe rilevato; caso mai verificato negli artefatti di questo repo.

@@ -18,6 +18,7 @@ REQUIRED_FILES: list[str] = [
     "skills/book-forge/SKILL.md",
     "skills/book-forge/references/state.md",
     "skills/book-forge/references/intake.md",
+    "skills/book-forge/references/ingest.md",
 ]
 
 REQUIRED_HEADERS: dict[str, list[str]] = {
@@ -47,6 +48,13 @@ REQUIRED_HEADERS: dict[str, list[str]] = {
         "## Raw material",
         "## Online research",
         "## Write meta.json",
+    ],
+    "skills/book-forge/references/ingest.md": [
+        "## Formats and adapters",
+        "## Convert .docx",
+        "## Convert .pdf",
+        "## Propose the chapter split",
+        "## Write the chapter files",
     ],
 }
 
@@ -78,6 +86,14 @@ REQUIRED_SUBSTRINGS: dict[str, list[str]] = {
         "create | complete | revise | restyle",
         "validation_mode",
         "web_available",
+    ],
+    "skills/book-forge/references/ingest.md": [
+        "pandoc cannot read PDF",
+        "user confirms the chapter split",
+        "heading search or line ranges",
+        "--from docx --to gfm --wrap=none",
+        "declare the limitation",
+        "never edit the prose",
     ],
 }
 

@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 REQUIRED_FILES: list[str] = [
     "skills/book-forge/SKILL.md",
     "skills/book-forge/references/state.md",
+    "skills/book-forge/references/intake.md",
 ]
 
 REQUIRED_HEADERS: dict[str, list[str]] = {
@@ -34,6 +35,18 @@ REQUIRED_HEADERS: dict[str, list[str]] = {
         "## Project directory layout",
         "## Naming and language rules",
         "## Resuming a project",
+    ],
+    "skills/book-forge/references/intake.md": [
+        "## Protocol",
+        "## Step 1 — identify the job",
+        "## Step 2 — validation mode (ask first)",
+        "## Core questions (all profiles)",
+        "## Question topics — fiction",
+        "## Question topics — practical nonfiction",
+        "## Question topics — narrative nonfiction",
+        "## Raw material",
+        "## Online research",
+        "## Write meta.json",
     ],
 }
 
@@ -58,6 +71,13 @@ REQUIRED_SUBSTRINGS: dict[str, list[str]] = {
         "references/<phase>.md",
         "continuity_window",
         "meta.schema.json",
+    ],
+    "skills/book-forge/references/intake.md": [
+        "one question at a time",
+        "in the user's own language",
+        "create | complete | revise | restyle",
+        "validation_mode",
+        "web_available",
     ],
 }
 

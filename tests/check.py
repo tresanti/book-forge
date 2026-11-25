@@ -29,6 +29,8 @@ REQUIRED_FILES: list[str] = [
     "skills/book-forge/references/roles/structure-editor.md",
     "skills/book-forge/references/roles/continuity-checker.md",
     "skills/book-forge/references/roles/copy-editor.md",
+    "skills/book-forge/references/final-review.md",
+    "skills/book-forge/references/roles/final-reviewer.md",
 ]
 
 REQUIRED_HEADERS: dict[str, list[str]] = {
@@ -140,6 +142,19 @@ REQUIRED_HEADERS: dict[str, list[str]] = {
         "## Inputs",
         "## Pass routine",
         "## Output contract",
+        "## Never",
+    ],
+    "skills/book-forge/references/final-review.md": [
+        "## Fresh-session rule",
+        "## Per-chapter dispatches",
+        "## Aggregate the reports",
+        "## User approval",
+    ],
+    "skills/book-forge/references/roles/final-reviewer.md": [
+        "## Identity",
+        "## Inputs",
+        "## Checks",
+        "## Report contract",
         "## Never",
     ],
 }
@@ -266,6 +281,23 @@ REQUIRED_SUBSTRINGS: dict[str, list[str]] = {
         "respect the voice: do not flatten intentional diction",
         "passes/registry-<pass>/ch-NN.md",
     ],
+    "skills/book-forge/references/final-review.md": [
+        "one fresh subagent per chapter",
+        "never the chapter's own drafter",
+        "nor its Phase 3 editor",
+        "gates.passes_approved: false",
+        "reports/final-review/ch-",
+        "reports/final-review.md",
+        "degraded_non_independent",
+        "awaiting_fresh_session",
+        "aggregates the per-chapter reports only",
+    ],
+    "skills/book-forge/references/roles/final-reviewer.md": [
+        "write only the report file",
+        "do not write meta.json",
+        "never rewrite",
+        "fresh context",
+    ],
 }
 
 FRONTMATTER_LINES: dict[str, list[str]] = {
@@ -377,6 +409,33 @@ def check_links(errors: list[str]) -> None:
                 continue  # pure anchor
             if not (path.parent / target).is_file():
                 errors.append(f"{rel}: broken link -> {target}")
+
+
+ROLE_FILES = [  # every role path mentioned in SKILL.md must be exactly these
+    "skills/book-forge/references/roles/researcher.md",
+    "skills/book-forge/references/roles/drafter.md",
+    "skills/book-forge/references/roles/structure-editor.md",
+    "skills/book-forge/references/roles/continuity-checker.md",
+    "skills/book-forge/references/roles/copy-editor.md",
+    "skills/book-forge/references/roles/final-reviewer.md",
+]
+ROLE_PATH_RE = re.compile(r"references/roles/[a-z-]+\.md")
+
+
+def check_role_paths(errors: list[str]) -> None:
+    skill_rel = "skills/book-forge/SKILL.md"
+    if not (ROOT / skill_rel).is_file():
+        return
+    mentioned = set(ROLE_PATH_RE.findall(read(skill_rel)))
+    expected = {rel.split("skills/book-forge/")[-1] for rel in ROLE_FILES}
+    for rel in ROLE_FILES:
+        if not (ROOT / rel).is_file() and rel not in REQUIRED_FILES:
+            errors.append(f"missing file: {rel}")
+    if mentioned != expected:
+        if expected - mentioned:
+            errors.append(f"{skill_rel}: dispatch missing role paths {sorted(expected - mentioned)}")
+        if mentioned - expected:
+            errors.append(f"{skill_rel}: unknown role paths {sorted(mentioned - expected)}")
 
 
 def check_meta_invariants(meta: dict) -> list[str]:
@@ -493,6 +552,7 @@ def main() -> int:
     check_headers(errors)
     check_substrings(errors)
     check_links(errors)
+    check_role_paths(errors)
     check_schema(errors)
     if errors:
         print(f"FAIL — {len(errors)} problem(s)")

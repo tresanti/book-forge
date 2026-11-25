@@ -58,6 +58,7 @@ The `continuity_window` default is `3`; the schema range is 2–10.
    - `passes` → `references/passes.md`
    - `final_review` → `references/final-review.md`
    - `export` / `done` → `references/export.md` — `done` is terminal for the operator (nothing left to run), but the resolver still maps it here because a re-export is always legal
+10. `notes` carries decisions and context — scope choices, limitations, deferred items — never progress claims, and never a substitute for evidence: the pipeline's state lives in the files (reports, registries, meta fields), and a gate is read from those files, not from any narrative note. Both flags stay report-visible, never note-declared: `awaiting_fresh_session` and `degraded_non_independent` behave exactly as stated, whatever the notes say.
 
 ## Project directory layout
 

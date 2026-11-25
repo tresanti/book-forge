@@ -10,7 +10,7 @@ Skill pubblica, harness-agnostic (pi / Claude Code / ecosistema skills.sh), che 
 
 | Artefatto | Percorso |
 |---|---|
-| Spec da giudicare | `docs/superpowers/specs/2026-11-25-book-forge-design.md` (workspace `C:/Libri/DominareIlTuoLavoroConAI`) |
+| Spec da giudicare | `docs/superpowers/specs/2026-11-25-book-forge-design.md` |
 | Grafo del workspace | `graphify-out/GRAPH_REPORT.md` (16 nodi, 15 comunità — workspace quasi vuoto: solo la spec e questo dossier) |
 | Diff/versioni | n/a — prima stesura (storia delle revisioni: sezione "Esito builder-check" in coda alla spec) |
 | Codice esistente | nessuno — progetto greenfield, non esistono ancora file di codice |

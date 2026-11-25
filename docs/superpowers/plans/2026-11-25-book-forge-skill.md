@@ -827,12 +827,14 @@ Expected: `FAIL — 12 problem(s)` — 12 × `missing fixture: tests/fixtures/me
   "genre_profile": "fiction",
   "validation_mode": { "type": "chapter" },
   "phase": "drafting",
-  "flags": { "awaiting_fresh_session": false, "degraded_non_independent": false, "web_available": null },
+  "flags": { "awaiting_fresh_session": false, "degraded_non_independent": false, "web_available": false },
   "gates": { "bible_approved": false, "passes_approved": false, "final_approved": false },
   "chapters": [],
   "continuity_window": 3
 }
 ```
+
+(`web_available` va tenuto `false` in questa notazione: con `phase` fuori enum scatta SOLO l'errore di enum dello schema — motivo esclusivo, vedi Amendamento 2.)
 
 `tests/fixtures/meta-invalid-block-size.json`: come `meta-create-intake.json` ma `"validation_mode": { "type": "blocks", "block_size": 1 }`.
 
@@ -1659,7 +1661,11 @@ git commit -m "docs: README — jobs, pipeline, install (skills.sh / pi / Claude
 - **2026-11-25 · Amendamento 1** (da plan-validator round 1 — verdetto BLOCKED, 1 blocker + 5 warning; report: `docs/superpowers/plans/2026-11-25-plan-validator-report.md`):
   - **Task 4 Step 2 (blocker)** — C6 riscritto: check d'ordine (`idx != sorted`) applicato SOLO ai subset del mode revise; create/complete pinnati per uguaglianza esatta con l'ordine completo macro→micro; restyle pinnato per uguaglianza esatta con `[style, continuity, grammar, spelling]` (voce prima per design — spec matrice (iv) + W4). Rimuove il contratto insoddisfacibile: prima, l'ordine restyle `[style, continuity, …]` violava PASS_ORDER e la fixture valida `meta-restyle-final-review.json` non poteva passare.
   - **Task 4 Step 6** — regola 7 di `state.md` espansa con i contratti per modalità (mirror del C6 emendato).
-  - **Task 2 (W4)** — `check_links` salta anche `graphify-out/` (output locale del tool, voi link relativi non verificabili dal piano).
+  - **Task 2 (W4)** — `check_links` salta anche `graphify-out/` (output locale del tool, con link relativi non verificabili dal piano).
   - **Task 13 Step 1 (W5)** — `check_role_paths` non duplica i missing già coperti da `REQUIRED_FILES` (`rel not in REQUIRED_FILES`); **Step 3** expected aggiornato a `FAIL — 2 problem(s)`.
   - **Task 3 Step 3 (W3)** — disciplina esplicita: path `references/roles/*.md` in SKILL.md sempre inline code, mai hyperlink (link-check del Task 2).
   - **Note di esecuzione (W2)** — aggiunta regola «`uv run` sempre, mai separare `python` dal prefisso» (Task 1 Step 5 resta `uv run python -c …`, unico uso inline documentato).
+- **2026-11-25 · Amendamento 2** (da plan-validator round 2 — PASS con warning; R2-1 + note N1/N2):
+  - **Task 4 Step 4 (R2-1)** — `meta-invalid-bad-enum.json`: `"web_available": false` (era `null`): con l'enum invalido di `phase` scatta SOLO l'errore di enum dello schema; prima la notazione violava anche C4 e il motivo di rifiuto non era esclusivo. Aggiunta nota a piè della notazione.
+  - **N1** — chiarimento: le etichette W2…W5 usate nel Changelog dell'Amendamento 1 si riferiscono ai finding f2…f5 del round 1 di plan-validator, NON ai warning oracle W1–W5 (che restano gli ID della tabella «Warning oracle → task» in testa al piano).
+  - **N2** — refuso corretto nel Changelog dell'Amendamento 1 («voi link relativi» → «con link relativi»).

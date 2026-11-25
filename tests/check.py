@@ -32,6 +32,7 @@ REQUIRED_FILES: list[str] = [
     "skills/book-forge/references/final-review.md",
     "skills/book-forge/references/roles/final-reviewer.md",
     "skills/book-forge/references/export.md",
+    "README.md",
 ]
 
 REQUIRED_HEADERS: dict[str, list[str]] = {
@@ -164,6 +165,17 @@ REQUIRED_HEADERS: dict[str, list[str]] = {
         "## EPUB 3 export",
         "## DOCX export (optional)",
         "## Finish",
+    ],
+    "README.md": [
+        "## What it does",
+        "## The four jobs",
+        "## How it works",
+        "## Install — skills.sh",
+        "## Install — pi",
+        "## Install — Claude Code",
+        "## Requirements",
+        "## Development",
+        "## Publishing checklist",
     ],
 }
 
@@ -313,6 +325,14 @@ REQUIRED_SUBSTRINGS: dict[str, list[str]] = {
         "Kindle Create",
         "the skill stops after export",
         "optional",
+    ],
+    "README.md": [
+        "npx skills add",
+        "~/.agents/skills/",
+        "~/.claude/skills/",
+        "pandoc is optional",
+        "uv run tests/check.py",
+        "MIT",
     ],
 }
 

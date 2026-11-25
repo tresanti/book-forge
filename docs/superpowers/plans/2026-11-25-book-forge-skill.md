@@ -241,8 +241,8 @@ DESCRIPTION_MAX = 1024
 
 LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+?)\)")
 URL_RE = re.compile(r"^[a-z][a-z0-9+.-]*://")
-FENCE_RE = re.compile(r"`{3}.*?`{3}", re.DOTALL)
-CODE_SPAN_RE = re.compile(r"`[^`\n]*`")
+FENCE_RE = re.compile(r"`{3,}.*?`{3,}", re.DOTALL)
+SPAN_RE = re.compile(r"(?<!`)(`+)(?!`)(.*?)(?<!`)\1(?!`)", re.DOTALL)
 
 # ---- checks ----------------------------------------------------------------
 
@@ -305,9 +305,10 @@ def check_substrings(errors: list[str]) -> None:
 
 
 def strip_code(text: str) -> str:
-    """Drop fenced code blocks and inline code spans: the link-check judges
-    prose markdown, never link examples quoted inside code."""
-    return CODE_SPAN_RE.sub(" ", FENCE_RE.sub(" ", text))
+    """Drop fenced code blocks and variable-length inline code spans — the
+    link-check judges prose markdown, never link examples quoted inside code
+    (including double-backtick spans that quote code containing backticks)."""
+    return SPAN_RE.sub(" ", FENCE_RE.sub(" ", text))
 
 
 def check_links(errors: list[str]) -> None:
@@ -1712,3 +1713,5 @@ git commit -m "docs: README — jobs, pipeline, install (skills.sh / pi / Claude
   - **Impatto fixture: zero** — nessuna delle 12 fixture cambia esito o motivo esclusivo di rifiuto (desk-check: complete è `phase: bible`; nessuna valida ha `planned` in fasi post-capitoli; le C5/C7 estese aggiungono solo vincoli a stati finora non campionati).
 - **2026-11-25 · Amendamento 4** (escalation worker Task 2, confermata dall'autore):
   - **Task 2 — `check_links` ignora il codice quotato** — aggiunti `FENCE_RE` (`` r"`{3}.*?`{3}`, re.DOTALL ``) e `CODE_SPAN_RE` (` `` r"`[^`\n]*`" ``) + funzione `strip_code(text)` applicata al testo PRIMA di estrarre i link: fenced block e inline code span non sono prosa markdown e i loro esempi `[x](path)` non vanno validati. Motivo: il piano stesso (Amendamento 3, regola inline-code) e il verbale oracle contengono esempi inline-code legittimi che il LINK_RE naive segnava come link rotti (`docs/superpowers/plans/2026-11-25-book-forge-skill.md:1678`, `…oracle-plan-freeze-verdict.md:92`) — l'assunzione "docs senza link relativi" del pre-piano era stata invalidata dagli artefatti post-freeze. Expected dello Step 2 invariato (`OK — all checks passed`). — Se l'emendamento fosse sbagliato: costo = un link rotto reale dentro un code span non verrebbe rilevato; caso mai verificato negli artefatti di questo repo.
+- **2026-11-25 · Amendamento 5** (escalazione worker Task 2, round 2, confermata dall'autore):
+  - **Task 2 — span a backtick VARIABILE in `strip_code`** — `FENCE_RE` diventa `r"`{3,}.*?`{3,}"` e `CODE_SPAN_RE` (monobacktick/monoriga: si sfasava sugli span DOPPIO-backtick — es. la prosa stessa del changelog di Amendamento 4) è sostituito da `SPAN_RE = r"(?<!`)(`+)(?!`)(.*?)(?<!`)\\1(?!`)"` con re.DOTALL: pairing a lunghezza variabile con lookaround — semantica markdown corretta anche per span che citano codice contenente backtick. Opzione B ( riscrivere la prosa del changelog per evitare i doppi backtick ) rifiutata: il doppio backtick è markdown legittimo e l'harness deve reggerlo; opzione C ( rosso accettato ) rifiutata. Verifica del worker su tutto il repo (scratch non committato): zero link segnalati. Expected Step 2/Step 3 invariati. — Se sbagliata: costo = potenziale mispairing in combinazioni esotiche di backtick ( non presenti in questo repo ).

@@ -22,7 +22,9 @@ REQUIRED_FILES: list[str] = [
     "skills/book-forge/references/bible.md",
     "skills/book-forge/references/ledger.md",
     "skills/book-forge/references/reconstruction.md",
+    "skills/book-forge/references/drafting.md",
     "skills/book-forge/references/roles/researcher.md",
+    "skills/book-forge/references/roles/drafter.md",
 ]
 
 REQUIRED_HEADERS: dict[str, list[str]] = {
@@ -89,6 +91,21 @@ REQUIRED_HEADERS: dict[str, list[str]] = {
         "## Duty A — compile the bible (mode create)",
         "## Duty B — reconstruct (modes complete / revise / restyle)",
         "## Copyright discipline",
+        "## Output contract",
+        "## Never",
+    ],
+    "skills/book-forge/references/drafting.md": [
+        "## The chapter cycle",
+        "## Dispatching the drafter",
+        "## User review and immediate rewrite",
+        "## Closing a chapter",
+        "## Blocks of N",
+        "## Never",
+    ],
+    "skills/book-forge/references/roles/drafter.md": [
+        "## Identity",
+        "## Inputs",
+        "## Routine",
         "## Output contract",
         "## Never",
     ],
@@ -167,6 +184,20 @@ REQUIRED_SUBSTRINGS: dict[str, list[str]] = {
         "declare it immediately",
         "source URL and the access date",
         "do not write meta.json",
+    ],
+    "skills/book-forge/references/drafting.md": [
+        "the same drafter",
+        "stateless",
+        "only after the user approves the current chapter",
+        "status: user_review",
+        "pass_scope",
+        "continuity/window/",
+    ],
+    "skills/book-forge/references/roles/drafter.md": [
+        "do not write meta.json",
+        "never edit approved chapters",
+        "bible.md",
+        "one chapter",
     ],
 }
 

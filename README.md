@@ -47,15 +47,15 @@ All state lives in `meta.json`, never in the conversation: a project can be clos
 ## Install — skills.sh
 
 ```bash
-npx skills add <owner>/book-forge@book-forge
+npx skills add tresanti/book-forge@book-forge
 ```
 
-Replace `<owner>` with the GitHub owner of the published repository. The `@book-forge` part is the ref skills.sh resolves inside the repository; the Publishing checklist below verifies the command live before release and, if the CLI's default ref differs, the ref is aligned at publish time rather than kept as a guess.
+The `@book-forge` part is the ref skills.sh resolves inside the repository; the Publishing checklist below verifies the command live before release and, if the CLI's default ref differs, the ref is aligned at publish time rather than kept as a guess.
 
 ## Install — pi
 
 ```bash
-git clone https://github.com/<owner>/book-forge ~/.agents/skills/book-forge
+git clone https://github.com/tresanti/book-forge ~/.agents/skills/book-forge
 ```
 
 pi ≥ 1.6.0 discovers skills recursively: every directory under `~/.agents/skills/` (the standard Agent Skills location) that contains a `SKILL.md` is loaded, so the clone target goes one level below the directory, named after the skill. Restart pi, or open a new session, and the skill is available.
@@ -63,7 +63,7 @@ pi ≥ 1.6.0 discovers skills recursively: every directory under `~/.agents/skil
 ## Install — Claude Code
 
 ```bash
-git clone https://github.com/<owner>/book-forge /tmp/book-forge \
+git clone https://github.com/tresanti/book-forge /tmp/book-forge \
   && mkdir -p ~/.claude/skills \
   && cp -r /tmp/book-forge/skills/book-forge ~/.claude/skills/
 ```
@@ -91,7 +91,7 @@ Node and Python are not runtime requirements: the `npx` one-liner above is run o
 The checks are the contract; they run the same way locally and in CI.
 
 ```bash
-git clone https://github.com/<owner>/book-forge
+git clone https://github.com/tresanti/book-forge
 cd book-forge
 uv run tests/check.py
 ```
@@ -110,8 +110,8 @@ What the checks freeze, so that a later edit cannot quietly break a contract the
 
 Before the repository is announced:
 
-1. Replace every `<owner>` placeholder in this README with the real GitHub owner.
-2. Verify the install command live, from a clean machine: `npx skills add <owner>/book-forge@book-forge` must install the skill and make it loadable. If the CLI's default ref is not `@book-forge`, align the ref here and in this checklist to what actually worked — never ship an unverified command.
+1. Owner placeholder: replaced with `tresanti`.
+2. Verify the install command live, from a clean machine: `npx skills add tresanti/book-forge@book-forge` must install the skill and make it loadable. If the CLI's default ref is not `@book-forge`, align the ref here and in this checklist to what actually worked — never ship an unverified command.
 3. Tag the release — an annotated tag, `git tag -a v0.1.0 -m "book-forge v0.1.0"`, pushed to origin — so that a pinned install and a re-publish refer to the same tree.
 4. Dogfood dry-run: run the skill end to end on a toy project (a 3-chapter book in `create` mode is enough) before publishing, to catch a broken dispatch path or a gate that does not close. Recommended, and deliberately outside the scope of the implementation plan.
 

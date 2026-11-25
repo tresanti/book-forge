@@ -13,13 +13,38 @@ ROOT = Path(__file__).resolve().parents[1]
 
 # ---- expectations registry (grow with tasks; exact values are binding) ----
 
-REQUIRED_FILES: list[str] = []
+REQUIRED_FILES: list[str] = [
+    "skills/book-forge/SKILL.md",
+]
 
 REQUIRED_HEADERS: dict[str, list[str]] = {
     # "repo/relative.md": ["## Exact header", ...]
+    "skills/book-forge/SKILL.md": [
+        "## First action — read the state",
+        "## Phase machine",
+        "## Routing by work_mode",
+        "## Dispatching roles",
+        "## Never",
+    ],
 }
 
-REQUIRED_SUBSTRINGS: dict[str, list[str]] = {}
+REQUIRED_SUBSTRINGS: dict[str, list[str]] = {
+    "skills/book-forge/SKILL.md": [
+        "Read `references/<phase>.md`",
+        "never trust session memory",
+        "references/roles/researcher.md",
+        "references/roles/drafter.md",
+        "references/roles/structure-editor.md",
+        "references/roles/continuity-checker.md",
+        "references/roles/copy-editor.md",
+        "references/roles/final-reviewer.md",
+        "references/ingest.md",
+        "awaiting_fresh_session",
+        "degraded_non_independent",
+        "one question at a time",
+        "user confirms the chapter split",
+    ],
+}
 
 FRONTMATTER_LINES: dict[str, list[str]] = {
     "skills/book-forge/SKILL.md": ["name: book-forge"],

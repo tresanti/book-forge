@@ -132,7 +132,7 @@ Progetto libro UTENTE (creato a runtime dalla skill, NON in questo repo) — sou
 └── exports/             # <slug>.epub, <slug>.docx
 ```
 
-Routing fase→file (pinnato; SKILL.md lo replica): `intake→intake.md`; `bible→bible.md` (mode create) / `reconstruction.md` (mode complete/revise/restyle); `chapters→drafting.md`; `passes→passes.md`; `final_review→final-review.md`; `export→export.md`; `done→export.md`.
+Routing fase→file (pinnato; SKILL.md lo replica): `intake→intake.md`; `bible→bible.md` (mode create) / `ingest.md` (esistenti, `chapters == []`) / `reconstruction.md` (esistenti, capitoli importati); `chapters→drafting.md`; `passes→passes.md`; `final_review→final-review.md`; `export→export.md`; `done→export.md`.
 
 ---
 

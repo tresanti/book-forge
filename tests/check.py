@@ -21,6 +21,8 @@ REQUIRED_FILES: list[str] = [
     "skills/book-forge/references/ingest.md",
     "skills/book-forge/references/bible.md",
     "skills/book-forge/references/ledger.md",
+    "skills/book-forge/references/reconstruction.md",
+    "skills/book-forge/references/roles/researcher.md",
 ]
 
 REQUIRED_HEADERS: dict[str, list[str]] = {
@@ -73,6 +75,22 @@ REQUIRED_HEADERS: dict[str, list[str]] = {
         "## Handoff window",
         "## Update after each approved chapter",
         "## Change discipline",
+    ],
+    "skills/book-forge/references/reconstruction.md": [
+        "## When this track runs",
+        "## Diagnostic sweep",
+        "## The rebuilt bible",
+        "## Mode complete — Gate 1 and stabilization",
+        "## Mode revise — Gate 1 and the revision plan",
+        "## Mode restyle — new voice and the pilot",
+    ],
+    "skills/book-forge/references/roles/researcher.md": [
+        "## Identity",
+        "## Duty A — compile the bible (mode create)",
+        "## Duty B — reconstruct (modes complete / revise / restyle)",
+        "## Copyright discipline",
+        "## Output contract",
+        "## Never",
     ],
 }
 
@@ -131,6 +149,24 @@ REQUIRED_SUBSTRINGS: dict[str, list[str]] = {
         "the last K approved chapters",
         "never mutate the index before a user decision",
         "PROVISIONAL",
+    ],
+    "skills/book-forge/references/reconstruction.md": [
+        "descriptive style guide",
+        "one chapter per dispatch",
+        "structure and continuity",
+        "revision-plan.md",
+        "pilot.md",
+        "the old book releases only canon, facts and ledger",
+        "research/reconstruction-notes.md",
+        "outline.md",
+        "status: \"planned\"",
+        "references/roles/copy-editor.md",
+        "normative",
+    ],
+    "skills/book-forge/references/roles/researcher.md": [
+        "declare it immediately",
+        "source URL and the access date",
+        "do not write meta.json",
     ],
 }
 

@@ -32,7 +32,7 @@ Each dispatch writes one file and returns: `reports/final-review/ch-NN.md`, NN t
 
 ## Aggregate the reports
 
-The orchestrator `aggregates the per-chapter reports only`. It does not re-read the chapters, does not sample them, and does not add a judgement of its own to the verdicts it is assembling — the book was read once, per chapter, by a fresh reader, and a second reading in the orchestrator's context would be the single-context review this phase exists to avoid.
+The orchestrator `aggregates the per-chapter reports only`. It does not re-read the chapters, does not sample them, and does not add a judgement of its own to the verdicts it is assembling — the book was read once, per chapter, by a fresh reader, and a second reading in the orchestrator's context would be the single-context review this phase exists to avoid. If any `reports/final-review/ch-NN.md` is missing, re-dispatch that chapter; never assemble the aggregate on a missing report.
 
 The aggregate is `reports/final-review.md`, assembled from the per-chapter files in chapter order and carrying these headings, in this order:
 

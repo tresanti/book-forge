@@ -41,7 +41,7 @@ The rotation is the point of the file's existence. The window holds the last K a
 The lifecycle has three moments, and the difference between them matters:
 
 - Phase 2 — the chapter cycle. The window moves forward one chapter at a time, exactly as above. When the last chapter of the cycle is approved, the window is FROZEN: file added, no file edited, no file deleted after that point. Frozen, not finished — it is the handoff state of the drafted book.
-- Phase 3 — the sequential passes. Each sequential pass REBUILDS the window as the sliding window of the pass in progress: reading chapter NN, the handoff in effect is regenerated from the chapters NN-K+1..NN as they stand at that moment, so a continuity pass sees the book as it now is and not as it was in phase 2. `references/passes.md` owns this rule and the order in which the passes run.
+- Phase 3 — the sequential passes. Each sequential pass REBUILDS the window as the sliding window of the pass in progress: reading chapter NN, the handoff in effect is regenerated from the chapters (NN-K)..(NN-1) as they stand at that moment, so a continuity pass sees the book as it now is and not as it was in phase 2. `references/passes.md` owns this rule and the order in which the passes run.
 - Imported manuscripts. Here the window has to be filled before any window could have advanced: the diagnostic sweep reconstructs the facts index from the manuscript and populates the window with the last K imported chapters — the tail of chapters 1..M — so that the first drafting dispatch after M starts with handoff context rather than an empty folder. The sweep itself is `references/reconstruction.md`.
 
 ## Update after each approved chapter

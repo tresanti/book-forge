@@ -40,7 +40,7 @@ On disk, `manuscript/NN-slug.md` — the chapter file you were assigned, in the 
 
 In the report, and kept short — it is an input to the ledger, not a retelling of the chapter:
 
-- what the chapter now establishes that the ledger must record: new facts, new threads, new terms, with enough precision that the Continuity-checker can write the row — who, what, where in the chapter it is established;
+- what the chapter now establishes that the ledger must record: new facts, new threads, new terms, character-state changes and voice decisions, with enough precision that the Continuity-checker can write the row — who, what, where in the chapter it is established;
 - the NOVELTIES you introduced beyond the contract, listed separately, each with why the chapter could not meet its beats without it;
 - conflicts you met and did not resolve: an index fact your chapter could not honour, a window state that contradicts the contract, a gap in the inputs;
 - for a rewrite, the corrections applied, and any correction you could not apply as stated, with the reason — the correction is then a question for the user, not a decision for you.

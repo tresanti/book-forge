@@ -677,7 +677,7 @@ def check_schema(errors: list[str]) -> None:
 - [ ] **Step 3: Run per verificare il fallimento atteso**
 
 Run: `uv run tests/check.py`
-Expected: `FAIL` — `missing file: skills/book-forge/references/meta.schema.json` + 12 × `missing fixture: tests/fixtures/meta-….json`.
+Expected: `FAIL — 12 problem(s)` — 12 × `missing fixture: tests/fixtures/meta-….json` (lo schema esiste già dallo Step 1: nessun `missing file` atteso).
 
 - [ ] **Step 4: Scrivere le 12 fixture (contenuti esatti)**
 

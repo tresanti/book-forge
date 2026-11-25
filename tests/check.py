@@ -31,6 +31,7 @@ REQUIRED_FILES: list[str] = [
     "skills/book-forge/references/roles/copy-editor.md",
     "skills/book-forge/references/final-review.md",
     "skills/book-forge/references/roles/final-reviewer.md",
+    "skills/book-forge/references/export.md",
 ]
 
 REQUIRED_HEADERS: dict[str, list[str]] = {
@@ -156,6 +157,13 @@ REQUIRED_HEADERS: dict[str, list[str]] = {
         "## Checks",
         "## Report contract",
         "## Never",
+    ],
+    "skills/book-forge/references/export.md": [
+        "## Check pandoc first",
+        "## book.yaml",
+        "## EPUB 3 export",
+        "## DOCX export (optional)",
+        "## Finish",
     ],
 }
 
@@ -297,6 +305,14 @@ REQUIRED_SUBSTRINGS: dict[str, list[str]] = {
         "do not write meta.json",
         "never rewrite",
         "fresh context",
+    ],
+    "skills/book-forge/references/export.md": [
+        "--to epub3",
+        "--split-level 1",
+        "--toc",
+        "Kindle Create",
+        "the skill stops after export",
+        "optional",
     ],
 }
 

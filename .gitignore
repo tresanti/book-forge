@@ -6,3 +6,5 @@ node_modules/
 .superpowers/
 .venv/
 __pycache__/
+.agents/
+.claude/

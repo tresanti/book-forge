@@ -19,6 +19,7 @@ REQUIRED_FILES: list[str] = [
     "skills/book-forge/references/state.md",
     "skills/book-forge/references/intake.md",
     "skills/book-forge/references/ingest.md",
+    "skills/book-forge/references/bible.md",
 ]
 
 REQUIRED_HEADERS: dict[str, list[str]] = {
@@ -55,6 +56,16 @@ REQUIRED_HEADERS: dict[str, list[str]] = {
         "## Convert .pdf",
         "## Propose the chapter split",
         "## Write the chapter files",
+    ],
+    "skills/book-forge/references/bible.md": [
+        "## Who works and how",
+        "## bible.md — fiction template",
+        "## bible.md — practical nonfiction template",
+        "## bible.md — narrative nonfiction template",
+        "## Style guide",
+        "## outline.md format",
+        "## Chapter length heuristic",
+        "## Gate 1 — approve the bible",
     ],
 }
 
@@ -94,6 +105,17 @@ REQUIRED_SUBSTRINGS: dict[str, list[str]] = {
         "--from docx --to gfm --wrap=none",
         "declare the limitation",
         "never edit the prose",
+    ],
+    "skills/book-forge/references/bible.md": [
+        "references/roles/researcher.md",
+        "references/ingest.md",
+        "references/reconstruction.md",
+        "2,000–4,000",
+        "3,000–5,000",
+        "2,500–4,500",
+        "[min]",
+        "[opt]",
+        "gates.bible_approved",
     ],
 }
 

@@ -1,0 +1,13 @@
+{
+  "$schema": "https://skills.sh/schemas/skills.sh.schema.json",
+  "notGrouped": "bottom",
+  "groupings": [
+    {
+      "title": "Book Forge",
+      "description": "Write or revise a full book manuscript — novel or nonfiction — from an idea or an existing draft to an exportable EPUB/DOCX, with human-gated chapter cycles and professional correction passes.",
+      "skills": [
+        "book-forge"
+      ]
+    }
+  ]
+}

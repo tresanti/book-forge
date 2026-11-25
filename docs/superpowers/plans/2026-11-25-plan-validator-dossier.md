@@ -18,10 +18,23 @@ Data: 2026-11-25 · Piano sotto esame: `docs/superpowers/plans/2026-11-25-book-f
 
 ## Corpus del dossier (leggi tutto, null'altro)
 
-1. `docs/superpowers/plans/2026-11-25-book-forge-skill.md` — il piano (15 task; snippet di codice, 12 fixture, expected output, comandi).
+1. `docs/superpowers/plans/2026-11-25-book-forge-skill.md` — il piano (15 task; snippet di codice, 12 fixture, expected output, comandi) — con **Amendamento 1** applicato (sezione `## Changelog / Emendamenti` in coda).
 2. `docs/superpowers/specs/2026-11-25-book-forge-design.md` — spec CONGELATA, FREEZE OK round 2 (autorità semantica; no Findings su di essa: è frozen).
-3. `graphify-out/GRAPH_REPORT.md` — report grafo, fresco (built from commit `6cc7395`).
-4. Questo dossier (evidenze ambiente verbatim sotto).
+3. `graphify-out/GRAPH_REPORT.md` — report del grafo. NB: mantenuto fresco dall'hook post-commit `graphify update` (auto-maintenance AGENTS.md): il file si aggiorna a OGNI commit del repo, quindi il suo `Built from commit` sarà sempre il commit corrente o più recente del corpus; per il gate vale il contenuto del file, non il confronto con un commit specifico citato altrove.
+4. `docs/superpowers/plans/2026-11-25-plan-validator-report.md` — Round 1 (verdetto BLOCKED: 1 blocker + 5 warning) — i finding che l'Amendamento 1 risolve.
+5. Questo dossier (evidenze ambiente verbatim + istruzioni round 2 sotto).
+
+## ROUND 2 — istruzioni
+
+- Il piano è cambiato SOLO dove dice l'`Amendamento 1` (Changelog in coda al piano). Nessun altro delta è ammesso: se trovi modifiche fuori dai punti elencati nel Changelog, è un finding (perimetro violato).
+- Verifica per il round 2:
+  1. **Nuovo C6** (Task 4 Step 2): desk-check TUTTE le 12 fixture (incluse le due derivate restyle di finding 1) — le 6 valide devono passare schema+C1–C8 senza alcun errore; le 6 invalide devono essere rifiutate ESATTAMENTE per i motivi dichiarati (2 via schema, 4 via invarianti: gates→C2, file-number→C1, flags→C3, scope→C6-restyle-equality).
+  2. **Coerenza C6 ↔ resto del piano**: regola (7) di state.md (Task 4 Step 6), Task 9 Step 3 (`(C6)`), Task 11 ordine/ambiti — tutte allineate con il C6 emendato (restyle = [style, continuity, grammar, spelling] voce prima; create/complete = ordine completo; revise = subset in ordine macro→micro).
+  3. **W4**: nuovo expected Task 13 Step 3 (`FAIL — 2 problem(s)`, no duplicati) e `check_role_paths` con guardia `rel not in REQUIRED_FILES`.
+  4. **W3**: disciplina inline-code aggiunta a Task 3 Step 3 coerente con `check_links` (che ora salta anche `graphify-out`/ — W4|finding 4).
+  5. **W2**: nota di esecuzione «`uv run` sempre / mai separare `python` dal prefisso» presente; Task 1 Step 5 resta `uv run python -c …` (utilizzabile per il dossier §1).
+  6. **W6**: i claim di commit del dossier sono deprescati (vedi corpus punto 3) — le righe §«Verità d'ambiente» non citano più commit specifici come vincolo.
+- Esci con verdetto round 2 (`PASS` / `PASS con warning` / `BLOCKED`) e conteggio finding. Se non hai tool di scrittura, restituisci il report nel canale: l'orchestratore lo appende al file del report come `## Round 2`.
 
 ## Verità d'ambiente — evidenze verbatim (orchestratore, 2026-11-25, macchina di build Windows 11)
 
@@ -97,7 +110,7 @@ Il piano prevede: name `book-forge` (kebab, ≤64) ✓; description pinnata ~350
 
 ### 4. Repo, infrastruttura, e cose NON verificabili localmente
 
-- Repo `main` @ `6cc7395`; contenuto totale: `.gitignore`, `docs/superpowers/specs/{design,oracle-dossier}.md`, `docs/superpowers/plans/{piano,dossier}`, `graphify-out/`. Nessun codice: nessun conflitto possibile con file esistenti.
+- Repo `main`: nessun codice → nessun conflitto possibile con file esistenti. Contenuto docs/: spec + dossier oracle + piano + dossier plan-validator + report plan-validator (round 1+). `graphify-out/` è output locale del tool (gitignored, non skill, non documentazione).
 - `node v26.13.0` presente ma inutilizzato dal piano (harness uv).
 - `.git/hooks/post-commit` attivo con `graphify update . >/dev/null 2>&1 || true` (auto-maintenance AGENTS.md).
 - `.gitignore` attuale NON contiene `.venv/`: il piano (Task 1 Step 2) la aggiunge in tempo — verifica che lo step preceda il primo `uv run` che crea la venv (Step 5 genera `uv.lock`: la venv `.venv/` viene creata lì).

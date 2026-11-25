@@ -304,7 +304,7 @@ def check_substrings(errors: list[str]) -> None:
 
 def check_links(errors: list[str]) -> None:
     for path in sorted(ROOT.rglob("*.md")):
-        if ".git" in path.parts or "node_modules" in path.parts:
+        if ".git" in path.parts or "node_modules" in path.parts or "graphify-out" in path.parts:
             continue
         rel = path.relative_to(ROOT).as_posix()
         for target in LINK_RE.findall(read(rel)):
@@ -420,6 +420,8 @@ Sezioni (header `## ` esatti come nel registro; contenuto: 4–10 righe per sezi
 4. `## Routing by work_mode`: la Matrice Fasi × Lavori della spec in forma compatta: 4 righe (create/complete/revise/restyle) × fasi sì/no + note di stabilizzazione (complete: structure+continuity su 1..M PRIMA di M+1), restyle (vecchio libro rilascia SOLO canon/facts/ledger; pilota come ancora few-shot; coda fase 3 = style/voice → continuity → grammar → spelling).
 5. `## Dispatching roles`: (a) regola W1: OGNI dispatch di subagent include nel prompt la path del role file (tabella ruolo→path: researcher, drafter, structure-editor, continuity-checker, copy-editor, final-reviewer) + i file di input per quel compito; (b) mapping harness: pi→subagent tool, Claude Code→Task tool, altrimenti inline nello stesso ordine; (c) due eccezioni protette: gate finale → `awaiting_fresh_session` (stop hard, sessione nuova; override self-review solo esplicito → `degraded_non_independent` nel rapporto), Researcher senza accesso web → lo dichiara subito e lavora sul materiale utente; (d) regola colloquio: one question at a time, nella lingua dell'utente; (e) ingest: user confirms the chapter split.
 6. `## Never`: lista anti-goal: avanzare un capitolo senza gate umano; caricare il libro intero in un contesto; testo copiato senza fonte; subagenti che scrivono `meta.json`/`bible.md`/ledger fuori contratto; proseguire oltre l'export (upload KDP).
+
+Disciplina link-check (vincolante): tutti i path `references/…` e `references/roles/*.md` in SKILL.md si scrivono come INLINE CODE tra backtick, MAI come hyperlink markdown — i file di riferimento esistono solo dai Task 4–13 e `check_links` (Task 2) segnala link rotti allo Step 4 di questo task; `check_role_paths` (Task 13) li riconosce da qualsiasi formattazione.
 
 - [ ] **Step 4: Run per verificare che passi**
 
@@ -621,22 +623,28 @@ def check_meta_invariants(meta: dict) -> list[str]:
     elif stab is not None:
         errs.append("stabilization block is only valid for work_mode 'complete'")
 
-    # C6 pass scope: canonical macro->micro order, per-mode sets, progress mirror
+    # C6 pass scope: mode-specific contracts; progress mirrors
+    # (create/complete: full macro->micro set; revise: any non-empty subset in
+    #  macro->micro order; restyle: exactly [style, continuity, grammar,
+    #  spelling] — style/voice first by design, spec W4; the equality checks
+    #  pin the order, so the sorted-index check applies to revise subsets only)
     scope = meta.get("pass_scope")
     if scope is not None:
-        if not set(scope) <= set(PASS_ORDER):
-            errs.append("pass_scope contains unknown passes")
-        else:
-            idx = [PASS_ORDER.index(p) for p in scope]
-            if idx != sorted(idx):
-                errs.append("pass_scope violates macro->micro order: " + " -> ".join(PASS_ORDER))
-        if mode == "restyle" and scope != ["style", "continuity", "grammar", "spelling"]:
-            errs.append("work_mode 'restyle' requires pass_scope = style, continuity, grammar, spelling")
-        if mode in ("create", "complete") and scope != PASS_ORDER:
-            errs.append("work_mode create/complete requires the full pass scope")
         progress = meta.get("pass_progress")
         if progress is not None and set(progress) != set(scope):
             errs.append("pass_progress keys must mirror pass_scope")
+        if not set(scope) <= set(PASS_ORDER):
+            errs.append("pass_scope contains unknown passes")
+        elif mode == "revise":
+            idx = [PASS_ORDER.index(p) for p in scope]
+            if idx != sorted(idx):
+                errs.append("pass_scope violates macro->micro order: " + " -> ".join(PASS_ORDER))
+        elif mode in ("create", "complete"):
+            if scope != PASS_ORDER:
+                errs.append("work_mode create/complete requires the full pass scope")
+        elif mode == "restyle":
+            if scope != ["style", "continuity", "grammar", "spelling"]:
+                errs.append("work_mode 'restyle' requires pass_scope = style, continuity, grammar, spelling")
 
     # C7 drafting statuses only during phase 'chapters'
     for c in chapters:
@@ -865,7 +873,7 @@ Registro: `REQUIRED_FILES` += `skills/book-forge/references/state.md`; `REQUIRED
 Run → FAIL (file mancante), poi scrivere il file:
 
 - `## meta.json — fields`: tabella campo → tipo/valori → chi lo scrive → quando (i campi/enum dell'Interfaccia di questo task, in copia conforme a `meta.schema.json`, citato come autorità macchina). Notare il default `continuity_window: 3` (range 2–10).
-- `## Transition rules`: elenco numerato: (1) `meta.json` is written only by the orchestrator — subagenti mai; (2) avanzamenti di fase SOLO con i gate della invariante C2 (bible_approved prima di chapters/passes; passes_approved prima di final_review; final_approved prima di export); (3) `awaiting_fresh_session=true` blocca TUTTO fino a sessione nuova (o override utente esplicito → `degraded_non_independent=true`, mai entrambi); (4) web_available va stabilito a fine intake; (5) capitolo: `planned|imported→drafting→user_review→(correzioni→drafting)→approved`; status `drafting|user_review` solo in phase `chapters`; (6) work_mode complete: stabilization (structure+continuity su 1..M) `done` OBBLIGATORIO prima di chapters; (7) pass_scope/pass_progress fissati al Gate 1 per mode revise/restyle (C6); (8) dopo l'impostazione di un campo di gate, non si retrocede mai senza decisione utente esplicita.
+- `## Transition rules`: elenco numerato: (1) `meta.json` is written only by the orchestrator — subagenti mai; (2) avanzamenti di fase SOLO con i gate della invariante C2 (bible_approved prima di chapters/passes; passes_approved prima di final_review; final_approved prima di export); (3) `awaiting_fresh_session=true` blocca TUTTO fino a sessione nuova (o override utente esplicito → `degraded_non_independent=true`, mai entrambi); (4) web_available va stabilito a fine intake; (5) capitolo: `planned|imported→drafting→user_review→(correzioni→drafting)→approved`; status `drafting|user_review` solo in phase `chapters`; (6) work_mode complete: stabilization (structure+continuity su 1..M) `done` OBBLIGATORIO prima di chapters; (7) pass_scope/pass_progress vincolati per modalità (C6): create/complete = tutte e cinque in ordine macro→micro; revise = sottoinsieme non vuoto in ordine macro→micro fissato dal revision-plan al Gate 1; restyle = esattamente [style, continuity, grammar, spelling] (voce prima per design, W4); (8) dopo l'impostazione di un campo di gate, non si retrocede mai senza decisione utente esplicita.
 - `## Project directory layout`: l'albero del progetto utente riportato in questo piano (verbatim).
 - `## Naming and language rules`: `manuscript/NN-slug.md` (NN 2 cifre), primo heading `# <titolo>`, slug kebab; prosa degli artefatti di progetto nella lingua del libro; chiavi/file della skill in inglese.
 - `## Resuming a project`: regola W1: leggi `meta.json` → `references/state.md` → rileggi `references/<phase>.md` a ogni sessione.
@@ -1422,7 +1430,7 @@ def check_role_paths(errors: list[str]) -> None:
     mentioned = set(ROLE_PATH_RE.findall(read(skill_rel)))
     expected = {rel.split("skills/book-forge/")[-1] for rel in ROLE_FILES}
     for rel in ROLE_FILES:
-        if not (ROOT / rel).is_file():
+        if not (ROOT / rel).is_file() and rel not in REQUIRED_FILES:
             errors.append(f"missing file: {rel}")
     if mentioned != expected:
         if expected - mentioned:
@@ -1481,7 +1489,7 @@ E dentro `main`, dopo `check_links(errors)`: `check_role_paths(errors)`.
 - [ ] **Step 3: Run per verificare i fallimenti attesi**
 
 Run: `uv run tests/check.py`
-Expected: `FAIL` — `missing file: skills/book-forge/references/final-review.md` + `missing file: skills/book-forge/references/roles/final-reviewer.md` (quest'ultimo segnalato anche da `check_role_paths`, poiché SKILL.md lo cita già dal Task 3).
+Expected: `FAIL — 2 problem(s)` — `missing file: skills/book-forge/references/final-review.md` + `missing file: skills/book-forge/references/roles/final-reviewer.md` (una volta ciascuno: il ramo missing di `check_role_paths` NON duplica — i role file sono già coperti da `REQUIRED_FILES`; quel ramo scatta solo per drift posteriore).
 
 - [ ] **Step 4: Scrivere `final-review.md`** (spec: obiettivo 9; B4; W5):
 
@@ -1641,6 +1649,17 @@ git commit -m "docs: README — jobs, pipeline, install (skills.sh / pi / Claude
 ## Note di esecuzione
 
 - **Lingua dei file creati**: ENGLISH per skill e repo (Global Constraint 1). I .md della skill parlano all'agente ("you are…"), non all'utente finale.
+- **`uv run` sempre**: ogni invocazione di Python passa da `uv run` (es. Task 1 Step 5: `uv run python -c …`). MAI usare `python` da solo — sulla macchina di build è lo stub dello Store (`Python was not found`) — e MAI separare `python` dal prefisso `uv run` quando si copia un comando.
 - **Espansione contenutistica**: ogni sezione pinnata con 4–10 righe: il worker Espande in prosa inglese rispettando gli header esatti e le substring ancorate; la spec (collegata nel header del piano) è l'autorità semantica; i valori pinnati in tabella qui sono stringhe vincolanti.
 - **Autocontrollo del worker**: dopo ogni task, il grep delle substring PInnate deve funzionare; contestualmente rileggere il report contro il diff (regola AGENTS.md: claim con file:linea).
 - **Il committ finale del piano**: `git commit -m "docs: implementation plan…" NON serve` — il piano è già committato dall'orchestratore; i task sopra partono dal commit con la spec congelata.
+
+## Changelog / Emendamenti
+
+- **2026-11-25 · Amendamento 1** (da plan-validator round 1 — verdetto BLOCKED, 1 blocker + 5 warning; report: `docs/superpowers/plans/2026-11-25-plan-validator-report.md`):
+  - **Task 4 Step 2 (blocker)** — C6 riscritto: check d'ordine (`idx != sorted`) applicato SOLO ai subset del mode revise; create/complete pinnati per uguaglianza esatta con l'ordine completo macro→micro; restyle pinnato per uguaglianza esatta con `[style, continuity, grammar, spelling]` (voce prima per design — spec matrice (iv) + W4). Rimuove il contratto insoddisfacibile: prima, l'ordine restyle `[style, continuity, …]` violava PASS_ORDER e la fixture valida `meta-restyle-final-review.json` non poteva passare.
+  - **Task 4 Step 6** — regola 7 di `state.md` espansa con i contratti per modalità (mirror del C6 emendato).
+  - **Task 2 (W4)** — `check_links` salta anche `graphify-out/` (output locale del tool, voi link relativi non verificabili dal piano).
+  - **Task 13 Step 1 (W5)** — `check_role_paths` non duplica i missing già coperti da `REQUIRED_FILES` (`rel not in REQUIRED_FILES`); **Step 3** expected aggiornato a `FAIL — 2 problem(s)`.
+  - **Task 3 Step 3 (W3)** — disciplina esplicita: path `references/roles/*.md` in SKILL.md sempre inline code, mai hyperlink (link-check del Task 2).
+  - **Note di esecuzione (W2)** — aggiunta regola «`uv run` sempre, mai separare `python` dal prefisso» (Task 1 Step 5 resta `uv run python -c …`, unico uso inline documentato).

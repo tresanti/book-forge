@@ -389,6 +389,7 @@ git commit -m "test: structural harness for the skill repo (check.py core)"
     "references/roles/continuity-checker.md",
     "references/roles/copy-editor.md",
     "references/roles/final-reviewer.md",
+    "references/ingest.md",
     "awaiting_fresh_session",
     "degraded_non_independent",
     "one question at a time",
@@ -415,8 +416,8 @@ description: Write or revise a full book manuscript — novel or nonfiction — 
 Sezioni (header `## ` esatti come nel registro; contenuto: 4–10 righe per sezione):
 
 1. Intro (PRIMA di `## First action…`, senza header `##`): 3 righe — cosa fa (4 lavori auto-rivelati), cosa produce, che si ferma all'export.
-2. `## First action — read the state`: se esiste `<project>/meta.json` → leggilo, poi `references/state.md`, poi la reference della fase corrente: `Read `references/<phase>.md`` — sempre RILETTO a ogni session/resume, mai dalla memoria: frase esatta `never trust session memory` (W1). Se non esiste → inizia da `references/intake.md` (fase 0). Progetto assente → chiedere all'utente dove crearlo/aprirlo.
-3. `## Phase machine`: tabella 7 righe `phase → reference file → gate → esecutori` (routing pinnato nella sezione "Struttura file" di questo piano): intake→intake.md (gate: domande completate; inline), bible→bible.md|reconstruction.md (gate: bible_approved; researcher subagent + utente), chapters→drafting.md (gate: per-capitolo utente; drafter subagent), passes→passes.md (gate: passa_approved via protocollo (b); editor subagent), final_review→final-review.md (gate: final_approved; final-reviewer FRESCO per capitolo), export→export.md (nessun gate; inline + pandoc), done.
+2. `## First action — read the state`: se esiste `<project>/meta.json` → leggilo, poi `references/state.md`, poi la reference della fase corrente: `Read `references/<phase>.md`` — sempre RILETTO a ogni session/resume, mai dalla memoria: frase esatta `never trust session memory` (W1); `<phase>` si risolve SEMPRE con la tabella di routing `phase × work_mode` del punto 3 (mai nome file letterale: `final_review` → `final-review.md`; `bible` esistente → `ingest.md` o `reconstruction.md` a seconda dei capitoli registrati). Se non esiste → inizia da `references/intake.md` (fase 0). Progetto assente → chiedere all'utente dove crearlo/aprirlo.
+3. `## Phase machine`: tabella 7 righe `phase → reference file → gate → esecutori` (routing pinnato nella sezione "Struttura file" di questo piano + regola 9 di state.md): intake→intake.md (gate: domande completate; inline), bible→bible.md (create) | ingest.md (esistenti, `chapters == []`) | reconstruction.md (esistenti, capitoli importati) (gate: bible_approved; researcher subagent + utente; per i lavori su esistente la fase bible COMINCIA da ingest.md e continua su reconstruction.md appena i capitoli sono importati), chapters→drafting.md (gate: per-capitolo utente; drafter subagent), passes→passes.md (gate: passes_approved via protocollo (b); editor subagent), final_review→final-review.md (gate: final_approved; final-reviewer FRESCO per capitolo), export→export.md (nessun gate; inline + pandoc), done.
 4. `## Routing by work_mode`: la Matrice Fasi × Lavori della spec in forma compatta: 4 righe (create/complete/revise/restyle) × fasi sì/no + note di stabilizzazione (complete: structure+continuity su 1..M PRIMA di M+1), restyle (vecchio libro rilascia SOLO canon/facts/ledger; pilota come ancora few-shot; coda fase 3 = style/voice → continuity → grammar → spelling).
 5. `## Dispatching roles`: (a) regola W1: OGNI dispatch di subagent include nel prompt la path del role file (tabella ruolo→path: researcher, drafter, structure-editor, continuity-checker, copy-editor, final-reviewer) + i file di input per quel compito; (b) mapping harness: pi→subagent tool, Claude Code→Task tool, altrimenti inline nello stesso ordine; (c) due eccezioni protette: gate finale → `awaiting_fresh_session` (stop hard, sessione nuova; override self-review solo esplicito → `degraded_non_independent` nel rapporto), Researcher senza accesso web → lo dichiara subito e lavora sul materiale utente; (d) regola colloquio: one question at a time, nella lingua dell'utente; (e) ingest: user confirms the chapter split.
 6. `## Never`: lista anti-goal: avanzare un capitolo senza gate umano; caricare il libro intero in un contesto; testo copiato senza fonte; subagenti che scrivono `meta.json`/`bible.md`/ledger fuori contratto; proseguire oltre l'export (upload KDP).
@@ -464,7 +465,7 @@ git commit -m "feat(skill): SKILL.md state machine + role dispatch (W1, W3)"
       "properties": {
         "title": { "type": "string", "minLength": 1 },
         "slug": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
-        "language": { "type": "string", "pattern": "^[a-z]{2,3}(-[A-Z]{2})?$" },
+        "language": { "type": "string", "pattern": "^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$" },
         "created": { "type": "string", "format": "date" }
       }
     },
@@ -618,7 +619,7 @@ def check_meta_invariants(meta: dict) -> list[str]:
     if mode == "complete":
         if not stab:
             errs.append("work_mode 'complete' requires a stabilization block")
-        elif phase == "chapters" and (stab.get("structure") != "done" or stab.get("continuity") != "done"):
+        elif phase in ("chapters", "passes", "final_review", "export", "done") and (stab.get("structure") != "done" or stab.get("continuity") != "done"):
             errs.append("mode complete: drafting new chapters requires stabilization done on imported chapters")
     elif stab is not None:
         errs.append("stabilization block is only valid for work_mode 'complete'")
@@ -646,13 +647,17 @@ def check_meta_invariants(meta: dict) -> list[str]:
             if scope != ["style", "continuity", "grammar", "spelling"]:
                 errs.append("work_mode 'restyle' requires pass_scope = style, continuity, grammar, spelling")
 
-    # C7 drafting statuses only during phase 'chapters'
+    # C7 drafting statuses only during phase 'chapters'; nothing may stay
+    # 'planned' (unwritten) once the manuscript is past the chapter cycle
     for c in chapters:
         if c.get("status") in ("drafting", "user_review") and phase != "chapters":
             errs.append(f"chapters: status {c.get('status')!r} valid only in phase 'chapters'")
+        if c.get("status") == "planned" and phase in ("passes", "final_review", "export", "done"):
+            errs.append("chapters: status 'planned' is not valid beyond phase 'chapters'")
 
-    # C8 imported work must record its chapters
-    if mode in ("complete", "revise", "restyle") and phase != "intake" and not chapters:
+    # C8 imported work must record its chapters — from Gate 1 on: during
+    # phase 'bible' (pre-split ingestion) chapters may legitimately be []
+    if mode in ("complete", "revise", "restyle") and (phase not in ("intake", "bible") or gates.get("bible_approved")) and not chapters:
         errs.append("imported work_mode with no chapters recorded")
 
     return errs
@@ -875,9 +880,9 @@ Registro: `REQUIRED_FILES` += `skills/book-forge/references/state.md`; `REQUIRED
 Run → FAIL (file mancante), poi scrivere il file:
 
 - `## meta.json — fields`: tabella campo → tipo/valori → chi lo scrive → quando (i campi/enum dell'Interfaccia di questo task, in copia conforme a `meta.schema.json`, citato come autorità macchina). Notare il default `continuity_window: 3` (range 2–10).
-- `## Transition rules`: elenco numerato: (1) `meta.json` is written only by the orchestrator — subagenti mai; (2) avanzamenti di fase SOLO con i gate della invariante C2 (bible_approved prima di chapters/passes; passes_approved prima di final_review; final_approved prima di export); (3) `awaiting_fresh_session=true` blocca TUTTO fino a sessione nuova (o override utente esplicito → `degraded_non_independent=true`, mai entrambi); (4) web_available va stabilito a fine intake; (5) capitolo: `planned|imported→drafting→user_review→(correzioni→drafting)→approved`; status `drafting|user_review` solo in phase `chapters`; (6) work_mode complete: stabilization (structure+continuity su 1..M) `done` OBBLIGATORIO prima di chapters; (7) pass_scope/pass_progress vincolati per modalità (C6): create/complete = tutte e cinque in ordine macro→micro; revise = sottoinsieme non vuoto in ordine macro→micro fissato dal revision-plan al Gate 1; restyle = esattamente [style, continuity, grammar, spelling] (voce prima per design, W4); (8) dopo l'impostazione di un campo di gate, non si retrocede mai senza decisione utente esplicita.
+- `## Transition rules`: elenco numerato: (1) `meta.json` is written only by the orchestrator — subagenti mai; (2) avanzamenti di fase SOLO con i gate della invariante C2 (bible_approved prima di chapters/passes; passes_approved prima di final_review; final_approved prima di export); (3) `awaiting_fresh_session=true` blocca TUTTO finché la pipeline non riprende in una sessione NUOVA: la sessione nuova si riconosce fresca = nessun turno di stesura/editing di questo libro nel proprio contesto, e solo allora esegue `awaiting_fresh_session: false` e avvia la review; in inline, con libri lunghi, i dispatch di review si possono frazionare in più sessioni fresche consecutive (override utente esplicito → `degraded_non_independent: true`, mai entrambi i flag — C3); (4) web_available va stabilito a fine intake; (5) capitolo: `planned|imported→drafting→user_review→(correzioni→drafting)→approved`; status `drafting|user_review` solo in phase `chapters`; status `planned` vietato da `passes` in poi (capitolo mai scritto — C7); (6) work_mode complete: stabilization (structure+continuity su 1..M) `done` OBBLIGATORIO prima di chapters e non può più retrocedere: resta `done` in tutte le fasi successive (C5); (7) pass_scope/pass_progress vincolati per modalità (C6): create/complete = tutte e cinque in ordine macro→micro; revise = sottoinsieme non vuoto in ordine macro→micro fissato dal revision-plan al Gate 1; restyle = esattamente [style, continuity, grammar, spelling] (voce prima per design, W4); (8) dopo l'impostazione di un campo di gate, non si retrocede mai senza decisione utente esplicita; unica retrocessione controllata prevista: capitolo bocciato al gate finale → conferma utente esplicita → `phase: "passes"` + `gates.passes_approved: false` → passata mirata sul capitolo + `resync facts-index` → nuovo Gate (b) → nuovo ingresso in `final_review` (in inline `awaiting_fresh_session` torna `true`: la sessione ormai ha editato prosa); (9) `<phase>` nella regola di resume si risolve SEMPRE via tabella phase × work_mode (mai nome file letterale: `final_review` → `final-review.md`): intake→`references/intake.md`; bible→`references/bible.md` (create) | `references/ingest.md` (esistenti con `chapters == []`) | `references/reconstruction.md` (esistenti con capitoli importati); chapters→`references/drafting.md`; passes→`references/passes.md`; final_review→`references/final-review.md`; export/done→`references/export.md`.
 - `## Project directory layout`: l'albero del progetto utente riportato in questo piano (verbatim).
-- `## Naming and language rules`: `manuscript/NN-slug.md` (NN 2 cifre), primo heading `# <titolo>`, slug kebab; prosa degli artefatti di progetto nella lingua del libro; chiavi/file della skill in inglese.
+- `## Naming and language rules`: `manuscript/NN-slug.md` (NN 2 cifre), primo heading `# <titolo>`, slug kebab **ASCII** — i titoli con accenti o alfabeti non latini si translitterano (fallback `chapter-NN` quando la translitterazione non è affidabile); prosa degli artefatti di progetto nella lingua del libro; chiavi/file della skill in inglese.
 - `## Resuming a project`: regola W1: leggi `meta.json` → `references/state.md` → rileggi `references/<phase>.md` a ogni sessione.
 
 - [ ] **Step 7: Run finale del task e commit**
@@ -940,7 +945,7 @@ git commit -m "feat(skill): meta.json schema, state reference, fixtures (W1 resu
 - `## Question topics — narrative nonfiction`: la timeline di ciò che è accaduto davvero; le persone reali e le sensibilità/riservatezza; il tema (di cosa parla, sotto la superficie); quantità di tessuto narrativo vs nudo resoconto.
 - `## Raw material`: appunti/file/concetti forniti dall'utente → `research/`; se presenti, il colloquio parte da lì e accorcia le domande; `research/sources.md` per ogni fonte (URL + access date) quando online.
 - `## Online research`: solo su richiesta esplicita; se l'ambiente non offre accesso web, il Researcher dichiara subito il limite e lavora sul solo materiale utente (eccezione protetta 2); esito del probe → `flags.web_available` (false→null check C4).
-- `## Write meta.json`: alla fine: crea il progetto (`<project-dir>` scelto con l'utente), inizializza albero (solo dir servite), scrive `meta.json` con i campi del Task 4, `phase: "bible"`, `chapters: []` (mode create) oppure dirigersi su `references/ingest.md` (lavori su esistente); lo scrive l'orchestratore, non un subagente.
+- `## Write meta.json`: alla fine: crea il progetto (`<project-dir>` scelto con l'utente), inizializza albero (solo dir servite), scrive `meta.json` con i campi del Task 4, `phase: "bible"`, `chapters: []` (in OGNI work_mode: per i lavori su esistente i capitoli arrivano dall'ingestione e fino allo split confermato restano `[]` — stato tollerato da C8 fino al Gate 1); per i lavori su esistente si prosegue su `references/ingest.md`; lo scrive l'orchestratore, non un subagente.
 
 - [ ] **Step 4: Run → Expected: OK. Commit:**
 
@@ -976,6 +981,7 @@ git commit -m "feat(skill): intake interview protocol (phase 0, mode auto-reveal
 [
     "pandoc cannot read PDF",
     "user confirms the chapter split",
+    "heading search or line ranges",
     "--from docx --to gfm --wrap=none",
     "declare the limitation",
     "never edit the prose",
@@ -986,11 +992,11 @@ git commit -m "feat(skill): intake interview protocol (phase 0, mode auto-reveal
 
 - [ ] **Step 3: Scrivere `ingest.md`** (spec: Vincoli; W2; builder-check 2, 11):
 
-- `## Formats and adapters`: .docx → pandoc (primario, fallback qualunque convertitore offerto dall'ambiente); .pdf → **estrattore di testo dedicato** perché `pandoc cannot read PDF` come INPUT (pandoc fa solo output PDF): candidati in ordine — `pdftotext`, convertitori dell'ambiente, python lib se disponibili; se nulla è disponibile: declare the limitation esplicitamente e chiedere all'utente un'alternativa (esporta in .docx/txt). Aggiornare `chapters[].origin/imported`… NO: `origin: "imported"`.
+- `## Formats and adapters`: .docx → pandoc (primario, fallback qualunque convertitore offerto dall'ambiente); .pdf → **estrattore di testo dedicato** perché `pandoc cannot read PDF` come INPUT (pandoc fa solo output PDF): candidati in ordine — `pdftotext`, convertitori dell'ambiente, python lib se disponibili; se nulla è disponibile: declare the limitation esplicitamente e chiedere all'utente un'alternativa (esporta in .docx/txt). I capitoli creati si registrano con `origin: "imported"`.
 - `## Convert .docx`: comando esatto: `pandoc --from docx --to gfm --wrap=none --output research/manuscript-raw.md <input.docx>`; poi normalizzazione leggera (heading level coerenti) SENZA toccare la prosa: `never edit the prose` — l'ingestione non emenda mai il testo.
 - `## Convert .pdf`: pipeline estrattore → markdown grezzo → stessa disciplina; nota che immagini/layout andranno persi e va dichiarato.
-- `## Propose the chapter split`: euristiche sui confini (heading livello 1/2, pattern "Chapter N", salti di pagina); proponi la lista numerata dei confini (titolo proposto + prima riga + n. parole); il loop si chiude SOLO quando `user confirms the chapter split` (W2) — la conferma dell'utente è obbligatoria prima di scrivere i file.
-- `## Write the chapter files`: scrivi `manuscript/NN-slug.md` (NN 2 cifre, slug kebab in lingua libro), ciascuno con `# <titolo>` come primo heading; registra i capitoli in `meta.json` (`status: "imported"`, `origin: "imported"`) — orchestratore only; poi `phase` resta `bible` e il seguito è `references/reconstruction.md`.
+- `## Propose the chapter split`: euristiche sui confini (heading search su livello 1/2, pattern "Chapter N", salti di pagina) operate per **heading search or line ranges** (grep/slicing con script leggero) — MAI leggendo `research/manuscript-raw.md` per intero in un contesto LLM (economia di contesto cardinale); proponi la lista numerata dei confini (titolo proposto + prima riga + n. parole — contato meccanicamente); il loop si chiude SOLO quando `user confirms the chapter split` (W2) — la conferma dell'utente è obbligatoria prima di scrivere i file.
+- `## Write the chapter files`: scrivi `manuscript/NN-slug.md` (NN 2 cifre, slug kebab **ASCII**: translitterazione del titolo; fallback `chapter-NN` per alfabeti non latini — vedi Naming rules di state.md), ciascuno con `# <titolo>` come primo heading; registra i capitoli in `meta.json` (`status: "imported"`, `origin: "imported"`) — orchestratore only; poi `phase` resta `bible` e il seguito è `references/reconstruction.md`.
 
 - [ ] **Step 4: Run → Expected: OK. Commit:**
 
@@ -1028,6 +1034,8 @@ git commit -m "feat(skill): manuscript ingestion adapters (W2: docx/pandoc, pdf/
 ```python
 [
     "references/roles/researcher.md",
+    "references/ingest.md",
+    "references/reconstruction.md",
     "2,000–4,000",
     "3,000–5,000",
     "2,500–4,500",
@@ -1041,7 +1049,7 @@ git commit -m "feat(skill): manuscript ingestion adapters (W2: docx/pandoc, pdf/
 
 - [ ] **Step 3: Scrivere `bible.md`** (spec: obiettivo 3; profili genere; builder backlog):
 
-- `## Who works and how`: dispatch del Researcher (`references/roles/researcher.md`) con input: trascrizione colloquio + `research/`; produce draft di `bible.md` + `outline.md`; l'orchestratore li presenta; NIENTE canon non validato prima del Gate 1 (closeWorld: la bibbia è contratto, non sbozzato).
+- `## Who works and how` (CREATION TRACK — prima riga del file: «This file is the creation track. If `work_mode` is not `create`, do not use it alone: with no chapters yet read `references/ingest.md`; with imported chapters read `references/reconstruction.md`.»): dispatch del Researcher (`references/roles/researcher.md`) con input: trascrizione colloquio + `research/`; produce draft di `bible.md` + `outline.md`; l'orchestratore li presenta; NIENTE canon non validato prima del Gate 1 (la bibbia è contratto, non sbozzato).
 - `## bible.md — fiction template` — campi [min]: Premise (una frase + paragrafo), Characters (nome, want, need, arc, stato iniziale), World (luoghi, regole), POV, Tone; campi [opt]: Archi secondari, Timeline, Convenzioni di genere (che pay-off il lettore si aspetta).
 - `## bible.md — practical nonfiction template` — [min]: Transformation (da cosa a cosa), Audience, Core concepts (elenco), Reader promises (cosa sa fare il lettore a fine di ogni parte), TOC logic; [opt]: Prerequisiti, Glossario di dominio, Case study disponibili.
 - `## bible.md — narrative nonfiction template` — [min]: True spine (timeline di ciò che è accaduto), Cast reale, Theme, Sensibilità/riservatezza; [opt]: Tessuto narrativo concesso, Fonti.
@@ -1056,7 +1064,7 @@ git commit -m "feat(skill): manuscript ingestion adapters (W2: docx/pandoc, pdf/
 | narrative_nonfiction | 2,500–4,500 | 55,000–75,000 |
 
   Derivazione: capitoli ≈ `length_target.words` / centro del range capitolo (arrotondato); l'introduzione di un manuale è tipicamente più corta (1,500–2,500 parole).
-- `## Gate 1 — approve the bible`: presenta bibbia+outline all'utente; l'utente modifica/approva; SOLO l'approvazione → `gates.bible_approved: true` e `phase: "chapters"`; mai auto-approvare; se l'utente vuole ricerche aggiuntive, torna al Researcher.
+- `## Gate 1 — approve the bible`: presenta bibbia+outline all'utente; l'utente modifica/approva; SOLO all'approvazione l'orchestratore: (a) inizializza `meta.json.chapters` da `outline.md` — 1..N, `status: "planned"`, `origin: "written"` (mode create); (b) setta `gates.bible_approved: true` e `phase: "chapters"`. Mai auto-approvare; se l'utente vuole ricerche aggiuntive, torna al Researcher.
 
 - [ ] **Step 4: Run → Expected: OK. Commit:**
 
@@ -1094,6 +1102,7 @@ git commit -m "feat(skill): bible & outline templates per genre + chapter length
     "superseded",
     "the last K approved chapters",
     "never mutate the index before a user decision",
+    "PROVISIONAL",
 ]
 ```
 
@@ -1101,10 +1110,10 @@ git commit -m "feat(skill): bible & outline templates per genre + chapter length
 
 - [ ] **Step 3: Scrivere `ledger.md`** (spec: B2; obiettivo 8; formato continuity/):
 
-- `## facts-index.md`: tabella con colonne esatte `| ID | Type | Fact or statement | Established | Source | Status |`: Type ∈ `character, place, object, event, timeline, promise, term, thread` (thread = foreshadowing/vincoli aperti); Established = provenienza del tipo `[ch.NN]` (o `bible §section` per fatti canonici); Source = file bibbia o capitolo; Status ∈ `canon | superseded`. Regola: mai cancellare una riga: la versione confutata è marcata `superseded` con la riga nuova accanto.
-- `## Handoff window`: `continuity/window/NN-slug.md`, uno per capitolo APPROVATO, lunghezza massima ~30 righe: What happened (3–6 bullet), New facts (ID aggiunti), Open threads (ancora da pagare), Character states (stato alla fine del capitolo), Voice notes. La finestra contiene the last K approved chapters (K = `continuity_window`): i file oltre K si ELIMINANO (i fatti vivono nell'index, la window è solo contesto di handoff).
+- `## facts-index.md`: tabella con colonne esatte `| ID | Type | Fact or statement | Established | Source | Status |`: Type ∈ `character, place, object, event, timeline, promise, term, thread` (thread = foreshadowing/vincoli aperti); Established = provenienza del tipo `[ch.NN]` (o `bible §section` per fatti canonici); Source = file bibbia o capitolo; Status ∈ `canon | superseded | provisional` — `provisional` SOLO durante lo sweep diagnostico (Task 9), prima della bibbia validata. Regola: mai cancellare una riga: la versione confutata è marcata `superseded` con la riga nuova accanto.
+- `## Handoff window`: `continuity/window/NN-slug.md`, uno per capitolo APPROVATO, lunghezza massima ~30 righe: What happened (3–6 bullet), New facts (ID aggiunti), Open threads (ancora da pagare), Character states (stato alla fine del capitolo), Voice notes. La finestra contiene the last K approved chapters (K = `continuity_window`): i file oltre K si ELIMINANO (i fatti vivono nell'index, la window è solo contesto di handoff). CICLO DI VITA: la window della fase 2 resta CONGELATA a fine ciclo capitoli; ogni passata sequenziale della fase 3 la RICOSTRUISCE come finestra scorrevole della passata in corso (Task 11); sugli importati la popola lo sweep (Task 9).
 - `## Update after each approved chapter`: dispatch del Continuity-checker (`references/roles/continuity-checker.md` — task 12, citare come inline code, no hyperlink): input = capitolo approvato + window corrente + facts-index; output = righe nuove/aggiornate dell'index + nuovo handoff file + pruning a K. L'orchestratore scrive solo meta.json.
-- `## Change discipline`: `never mutate the index before a user decision`: le righe si aggiungono da capitoli approvati o bibbia validata; ogni rettifica suggestionata fuori da questi canali → STOP → protocollo contraddizioni di `passes.md`.
+- `## Change discipline`: `never mutate the index before a user decision`: le righe si aggiungono da capitoli approvati o bibbia validata; ogni rettifica suggestionata fuori da questi canali → STOP → protocollo contraddizioni di `passes.md`. Unica eccezione dichiarata: lo sweep diagnostico (Task 9) POPOLA l'index con righe PROVISIONAL prima del Gate 1 (Status = `provisional`); la canonizzazione in `canon`/`superseded` avviene SOLO con la bibbia validata dall'utente al Gate 1 — la decisione resta sempre dell'utente.
 
 - [ ] **Step 4: Run → Expected: OK. Commit:**
 
@@ -1158,6 +1167,11 @@ git commit -m "feat(skill): continuity ledger — facts-index with provenance + 
     "revision-plan.md",
     "pilot.md",
     "the old book releases only canon, facts and ledger",
+    "research/reconstruction-notes.md",
+    "outline.md",
+    "status: \"planned\"",
+    "references/roles/copy-editor.md",
+    "normative",
 ]
 ```
 `REQUIRED_SUBSTRINGS["skills/book-forge/references/roles/researcher.md"]` =
@@ -1174,17 +1188,17 @@ git commit -m "feat(skill): continuity ledger — facts-index with provenance + 
 - [ ] **Step 3: Scrivere `reconstruction.md`** (spec: obiettivi 1(ii-iv), 3; matrice; B3; W4):
 
 - `## When this track runs`: modes complete/revise/restyle con capitoli `imported` (dopo ingest); per mode bible re-read rule; rimanda il lavoro (i) a `bible.md`.
-- `## Diagnostic sweep`: per OGNI capitolo importato, un subagent fresco (Researcher, duty B) — `one chapter per dispatch`, in sequenza (mai il libro intero): estrae canon (personaggi/mondo/concetti), glossario, righe di facts-index con provenienza, osservazioni di stile (frasi campione), e CONTRADDIZIONI mano a mano che emergono (con provenienza `[ch.NN]` di entrambe le versioni — formato del Task 8). Le contraddizioni si registrano, NON si risolvono nello sweep.
-- `## The rebuilt bible`: assemblaggio (orchestratore/Researcher) in `bible.md` con template del Task 7, MA la style guide qui è descrittiva: `descriptive style guide` — come suona il libro ORA (con estratti reali come few-shot), NON normative; avviso esplicito che la normative nasce dal Gate 1.
-- `## Mode complete — Gate 1 and stabilization`: l'utente valida la bibbia ricostruita → poi STABILIZZAZIONE obbligatoria dei capitoli importati 1..M prima di scrivere il primo capitolo nuovo: SOLO le passate `structure and continuity` SU 1..M (motore di `passes.md`, task 11 — W4), macro→micro; style/grammar/spelling restano alla fase 3 sull'intero libro; aggiornare `stabilization` → entrambi `done` → solo allora `phase: "chapters"` (invariante C5).
-- `## Mode revise — Gate 1 and the revision plan`: Gate 1 = l'utente valida la bibbia ricostruita ("è il libro che hai scritto?") + approva `revision-plan.md`: formato pinnato — per passata selezionata: scopo + per-capitolo note (dove intervenire e perché) + cosa NON toccare; `pass_scope` si deriva dal piano approvato (sottoinsieme, ordine macro→micro); poi `phase: "passes"`. (Spec: "la style guide normativa nasce dalla validazione dell'utente al Gate 1 — l'utente può accettare la voce attuale o dire dove il libro NON è quello che voleva".)
-- `## Mode restyle — new voice and the pilot`: colloquio (intake) per la NUOVA voce → style guide NORMATIVA nella bibbia; vincolo della spec: `the old book releases only canon, facts and ledger` — la vecchia style guide NON entra MAI; il pilota = 1 capitolo (o estratto lungo) riscritto nella nuova voce → l'utente lo approva al Gate 1 → salvato in `pilot.md` come ancora few-shot di OGNI dispatch di passata stile; `pass_scope` = [style, continuity, grammar, spelling] (C6); poi `phase: "passes"`.
+- `## Diagnostic sweep`: per OGNI capitolo importato, un subagent fresco (Researcher, duty B) — `one chapter per dispatch`, in sequenza (mai il libro intero): input di OGNI dispatch = capitolo corrente + `continuity/facts-index.md` provisionale cumulativo + `research/reconstruction-notes.md` (note estratte dei capitoli precedenti); estrae canon (personaggi/mondo/concetti), glossario, righe PROVISIONAL di facts-index con provenienza, osservazioni di stile (frasi campione), sintesi purpose/beat del capitolo (per assemblare `outline.md`) e handoff window, e CONTRADDIZIONI mano a mano che emergono (con provenienza `[ch.NN]` di entrambe le versioni — formato del Task 8): così il capitolo 12 vede i fatti del capitolo 04 senza mai caricare i capitoli precedenti. Le contraddizioni si registrano, NON si risolvono nello sweep.
+- `## The rebuilt bible`: assemblaggio (orchestratore/Researcher) in `bible.md` con template del Task 7 leggendo SOLO le `research/reconstruction-notes.md` (mai rileggendo i capitoli), MA la style guide qui è descrittiva: `descriptive style guide` — come suona il libro ORA (con estratti reali come few-shot), NON normative; avviso esplicito che la normative nasce dal Gate 1. INSIEME alla bibbia si assemblano: `outline.md` sui capitoli importati 1..M (dalle sintesi purpose/beat dello sweep) e `continuity/window/` con gli handoff degli ULTIMI K capitoli importati.
+- `## Mode complete — Gate 1 and stabilization`: l'utente valida la bibbia ricostruita — con la validazione la style guide descrittiva diventa NORMATIVA (l'utente accetta la voce attuale o indica dove il libro NON è quello che voleva — spec obiettivo 3) — e approva `outline.md`: i contratti dei capitoli esistenti 1..M E i contratti dei NUOVI capitoli M+1..N (il TOC mancante si integra col colloquio, Task 5); poi STABILIZZAZIONE obbligatoria dei capitoli importati 1..M prima di scrivere il primo capitolo nuovo: SOLO le passate `structure and continuity` SU 1..M (motore di `passes.md`, task 11 — W4), macro→micro; style/grammar/spelling restano alla fase 3 sull'intero libro; conclusa la stabilizzazione: l'orchestratore registra i capitoli M+1..N in `meta.json.chapters` (`status: "planned"`, `origin: "written"`), `stabilization` → entrambi `done`, e SOLO ALLORA `phase: "chapters"` (invarianti C5/C7).
+- `## Mode revise — Gate 1 and the revision plan`: Gate 1 = l'utente valida la bibbia ricostruita ("è il libro che hai scritto?" — con la validazione la style guide descrittiva diventa NORMATIVA) + approva `outline.md` ricostruito e `revision-plan.md`: formato pinnato — per passata selezionata: scopo + per-capitolo note (dove intervenire e perché) + cosa NON toccare; `pass_scope` si deriva dal piano approvato (sottoinsieme, ordine macro→micro); poi `phase: "passes"` (qui i capitoli sono già tutti `status: "imported"` — nessuno `planned`, C7). (Spec: "la style guide normativa nasce dalla validazione dell'utente al Gate 1 — l'utente può accettare la voce attuale o dire dove il libro NON è quello che voleva".)
+- `## Mode restyle — new voice and the pilot`: colloquio (intake) per la NUOVA voce → style guide NORMATIVA nella bibbia; vincolo della spec: `the old book releases only canon, facts and ledger` — la vecchia style guide NON entra MAI; il pilota = 1 capitolo (o estratto lungo) riscritto nella nuova voce da un dispatch di `references/roles/copy-editor.md` (passata style/voice; input: solo il capitolo scelto + nuova style guide + canon/fatti del ledger estratti) con round-trip finché l'utente lo approva al Gate 1 → salvato in `pilot.md` come ancora few-shot di OGNI dispatch di passata stile; `pass_scope` = [style, continuity, grammar, spelling] (C6); poi `phase: "passes"` (come revise: nessun capitolo `planned`).
 
 - [ ] **Step 4: Scrivere `roles/researcher.md`**:
 
 - `## Identity`: "You are the Researcher. You compile and reconstruct — you never draft chapters and never edit prose." (harness-agnostic, nessun nome di tool).
 - `## Duty A — compile the bible (mode create)`: da trascrizione colloquio + `research/` → bozza `bible.md` + `outline.md` (template Task 7); ricerca online SOLO se richiesta dall'utente e possibile; le lacune non si colmano con invenzioni: tornano al colloquio come domande da porre (una per volta).
-- `## Duty B — reconstruct (modes complete / revise / restyle)`: per UN capitolo per volta (sequenziale, contesto fresco): estrazione canon/facts/glossario/style observations/contraddizioni (formato del Task 8); no judgement, no fix; le contraddizioni riportate CON provenienza.
+- `## Duty B — reconstruct (modes complete / revise / restyle)`: per UN capitolo per volta (sequenziale, contesto fresco; input: capitolo + facts-index provisionale cumulativo + `research/reconstruction-notes.md`): estrazione canon/facts/glossario/style observations/contraddizioni + sintesi purpose/beat per `outline.md` + handoff window del capitolo (formati dei Task 7–8); aggiorna note e righe PROVISIONAL dell'index; no judgement, no fix; le contraddizioni riportate CON provenienza.
 - `## Copyright discipline`: ogni testo riportato porta la fonte: `source URL and the access date` in `research/sources.md`; riscrittura con parole proprie SOLO su richiesta esplicita dell'utente, e comunque la fonte resta tracciata.
 - `## Output contract`: file prodotti (bozze, estratti, righe di facts-index pronte da inserire, contraddizioni documentate); formato risposta breve all'orchestratore.
 - `## Never`: `do not write meta.json`; non scrivere in `manuscript/`; non risolvere contraddizioni da solo; non emendare prosa altrui; se non puoi cercare online, `declare it immediately` e prosegui sul materiale utente dichiarando il limite nell'output.
@@ -1235,8 +1249,10 @@ git commit -m "feat(skill): reconstruction track for existing manuscripts + rese
 ```python
 [
     "the same drafter",
+    "stateless",
     "only after the user approves the current chapter",
     "status: user_review",
+    "pass_scope",
     "continuity/window/",
 ]
 ```
@@ -1256,8 +1272,8 @@ git commit -m "feat(skill): reconstruction track for existing manuscripts + rese
 
 - `## The chapter cycle`: ciclo di un capitolo con le stringhe di stato esatte del registro (`status: drafting`, `status: user_review`, `status: approved`): pick del prossimo `planned` → `status: drafting` → dispatch DRAFTER → `status: user_review` → l'utente legge → correzioni → stesso DRAFTER (round-trip) → nuova lettura → `status: approved`. Il capitolo si chiude SOLO all'approvazione.
 - `## Dispatching the drafter`: input del prompt: role path + `bible.md` + contratto del capitolo (da `outline.md`) + window (`continuity/window/`) + righe di facts-index citate dal contratto; MAI altri capitoli interi; il draft si scrive in `manuscript/NN-slug.md`; lingua = `project.language`; target range dall'euristica.
-- `## User review and immediate rewrite`: presentare il capitolo; le correzioni dell'utente tornano VERBATIM a `the same drafter` che riscrive IMMEDIATAMENTE (round-trip; l'orchestratore orchestra soltanto, non emenda); poi nuova lettura; le correzioni NON si accumulano a fine lavorazione (decisione utente 3).
-- `## Closing a chapter`: `approved` → dispatch Continuity-checker per ledger+window (Task 8) → advances `only after the user approves the current chapter`; nessuna stesura oltre il gate (status `user_review` registrato con `status: user_review`).
+- `## User review and immediate rewrite`: presentare il capitolo; le correzioni dell'utente tornano VERBATIM a `the same drafter` che riscrive IMMEDIATAMENTE (round-trip; l'orchestratore orchestra soltanto, non emenda); se l'harness ha subagent one-shot stateless, "the same drafter" = ri-dispatch del ruolo Drafter col draft corrente del capitolo + correzioni verbatim + bibbia + contratto + window (la continuità vive nei file di progetto, non nell'identità dell'istanza); poi nuova lettura; le correzioni NON si accumulano a fine lavorazione (decisione utente 3).
+- `## Closing a chapter`: `approved` → dispatch Continuity-checker per ledger+window (Task 8) → advances `only after the user approves the current chapter`; nessuna stesura oltre il gate (status `user_review` registrato con `status: user_review`). Quando l'ULTIMO capitolo pianificato diventa `approved`: l'orchestratore setta `phase: "passes"` e inizializza `pass_scope`/`pass_progress` secondo C6 (create/complete: tutte e cinque; revise/restyle: come fissato al Gate 1).
 - `## Blocks of N`: `validation_mode.type == "blocks"`: si scrivono N capitoli di fila (uno per dispatch, sempre con handoff aggiornato), poi UNA sola sessione di lettura per il blocco; correzioni → round-trip sui capitoli del blocco; approvato il blocco → tutti `approved` → ledger update; MAI scrivere oltre il blocco in attesa.
 - `## Never`: non procedere oltre il gate; non aggiornare la bibbia durante la stesura (le deviazioni diventano domande per l'utente); non lasciare status `drafting`/`user_review` a fine sessione senza dirlo all'utente.
 
@@ -1310,6 +1326,10 @@ git commit -m "feat(skill): chapter drafting cycle with human gate round-trip + 
     "resync facts-index",
     "passes/registry-",
     "macro to micro",
+    "aggregated by the orchestrator",
+    "passes/registry-<pass>/ch-NN.md",
+    "sliding window",
+    "stabilization (phase 1)",
 ]
 ```
 
@@ -1318,10 +1338,10 @@ git commit -m "feat(skill): chapter drafting cycle with human gate round-trip + 
 - [ ] **Step 3: Scrivere `passes.md`** (spec: obiettivi 7–8; B1, B2; decisioni utente 9–12; W4, W5; matrix):
 
 - `## Pass order and per-mode scope`: ordine fisso `macro to micro`: stringa esatta `structure → continuity → style/voice → grammar → spelling` — ogni passata che riscrive prosa passa PRIMA delle micro correzioni, così la prosa riscritta arriva comunque verificata a valle (B1). Scope per modalità (W4): create/complete = tutte; revise = sottoinsieme da `revision-plan.md` approvato; restyle = esattamente `style/voice → continuity → grammar → spelling` (senza structure); complete (stabilizzazione in fase 1) = solo `structure` e `continuity` su 1..M. Registri in `pass_scope`/`pass_progress` (Task 4).
-- `## How each pass runs`: structure e continuity: per capitolo IN SEQUENZA (contro il ledger: facts-index compresso, mai il libro intero), un capitolo per subagent (`one chapter per dispatch`); style/voice, grammar, spelling: per-file con subagenti PARALLELIZZABILI (un capitolo per subagent, contesto fresco); per restyle OGNI dispatch stile include `pilot.md` + style guide della bibbia come ancora few-shot (W4/matrix); ogni dispatch = role file del Task 12 + file input + registro di uscita.
-- `## Contradiction protocol` (B2): il Continuity-checker confronta il capitolo con l'index: conflitto con provenienza ([ch.04] dice X, [ch.12] dice Y) → se la bibbia VALIDATA risolve univocamente: auto-fix `only the chapters in error` + righe di index corrette + registro con entrambe le provenienze; se il canon è ambiguo: `stop and ask the user` — si scrive `passes/contradiction-NN.md` (entrambe le versioni + provenienza + schema di decisione), la passata su quel file si ferma, il ledger NON muta; la decisione dell'utente aggiorna bibbia/index e sblocca.
+- `## How each pass runs`: structure e continuity: per capitolo IN SEQUENZA (contro il ledger: facts-index compresso, mai il libro intero), un capitolo per subagent (`one chapter per dispatch`); ALL'INIZIO di ogni sweep sequenziale la `continuity/window/` viene RICOSTRUITA come sliding window della passata in corso (per il capitolo i: handoff dei capitoli (i−K)…(i−1)) — la window della fase 2 è congelata, ogni passata genera la propria; style/voice, grammar, spelling: per-file con subagenti PARALLELIZZABILI (un capitolo per subagent, contesto fresco) — i subagenti paralleli NON scrivono il registro della passata: ognuno scrive SOLO il proprio capitolo + il frammento per-capitolo `passes/registry-<pass>/ch-NN.md`, e il file `passes/registry-<pass>.md` è `aggregated by the orchestrator` a fine passata in ordine 01..NN (nessuna scrittura concorrente sul registro — è l'evidenza del Gate (b)); per restyle OGNI dispatch stile include `pilot.md` + style guide della bibbia come ancora few-shot (W4/matrix); ogni dispatch = role file del Task 12 + file input + canale di uscita prescritto.
+- `## Contradiction protocol` (B2): il Continuity-checker confronta il capitolo con l'index: conflitto con provenienza ([ch.04] dice X, [ch.12] dice Y) → se la bibbia VALIDATA risolve univocamente: auto-fix `only the chapters in error` (contraddizione su un capitolo PRECEDENTE → dispatch mirato su quel capitolo, sempre one chapter per dispatch) + righe di index corrette + registro con entrambe le provenienze; se il canon è ambiguo: `stop and ask the user` — si scrive `passes/contradiction-NN.md` (entrambe le versioni + provenienza + schema di decisione), la passata su quel file si ferma, il ledger NON muta; la decisione dell'utente aggiorna bibbia/index e sblocca. Guardia B1: NESSUNA micro-passata (style/grammar/spelling) parte finché esiste un file STOP `passes/contradiction-*.md` APERTO.
 - `## facts-index resync` (W5): DOPO la chiusura della passata structure E dopo ogni auto-fix di canon/contraddizione risolta: dispatch Continuity-checker per `resync facts-index` sui capitoli toccati (righe aggiornate con nuova provenienza) PRIMA che parta la passata successiva; a fine fase 3, resync finale mentre si prepara il gate.
-- `## Diff registries`: un registro per passata: `passes/registry-structure.md` … `passes/registry-spelling.md`; voce per capitolo: data, capitolo/file, problemi trovati (tipo e n.), changed yes/no, riepilogo per classe di intervento, UN campione before→after, contraddizioni eventuali (puntatore al file STOP). Registro = evidenza verificabile del diff (obiettivo 7).
+- `## Diff registries`: un registro per passata: `passes/registry-structure.md` … `passes/registry-spelling.md`; la voce per capitolo (data, capitolo/file, problemi trovati (tipo e n.), changed yes/no, riepilogo per classe di intervento, UN campione before→after, contraddizioni eventuali con puntatore al file STOP) nasce come frammento `passes/registry-<pass>/ch-NN.md` e il registro della passata è l'aggregazione ordinata per capitolo dei frammenti (vedi How each pass runs); in work_mode complete il registro distingue la sezione `stabilization (phase 1)` da quella della fase 3. Registro = evidenza verificabile del diff (obiettivo 7).
 - `## Gate — protocol (b)` (decisione utente 9): fine fase 3 → l'utente esamina i registri diff (ritionali per passata, con conteggi e campioni); l'orchestratore offre CAMPIONAMENTO (ri-lettura di capitoli scelti); la ri-lettura integrale è SEMPRE disponibile quando l'utente vuole rileggere tutto; il gate si chiude solo con l'approvazione esplicita → `gates.passes_approved: true` → `phase: "final_review"`.
 
 - [ ] **Step 4: Run → Expected: OK. Commit:**
@@ -1381,6 +1401,7 @@ git commit -m "feat(skill): shared correction engine — macro→micro passes, c
     "spelling",
     "do not write meta.json",
     "respect the voice: do not flatten intentional diction",
+    "passes/registry-<pass>/ch-NN.md",
 ]
 ```
 
@@ -1390,7 +1411,7 @@ git commit -m "feat(skill): shared correction engine — macro→micro passes, c
 
 - `structure-editor.md`: Identity: "You are the Structure Editor. You fix chapter cohesion and book flow — one chapter per dispatch, in reading order." Inputs: capitolo + outline contract + window; Routine: `chapter cohesion` (apertura/chiusura, ordine dei beat, promesse del capitolo mantenute) e contributo al `the book flow` (transizioni col capitolo precedente/successivo); spostamenti di paragrafi SENZA riscritture estese; Output: capitolo corretto + voce di registro (`passes/registry-structure.md`); Never: non toccare la bibbia/canon, non riscrivere la voce, `do not write meta.json`, non risolvere contraddizioni di canon (si passano al protocollo).
 - `continuity-checker.md`: Identity: "You check the chapter against the continuity ledger and fix only what univocal canon fixes." Inputs: capitolo + `facts-index.md` + window + bibbia; Routine: confronto entità/fatti/promesse/thread; risolve SOLO a canon univoco; conflitto ambiguo → `contradiction` file STOP e fermo; tiene l'index aggiornato (duty anche per ledger update post-approvazione e resync W5 — Task 8/11); Output: capitolo (solo capitoli in errore) + righe index + registro `passes/registry-continuity.md`; Never: `do not write meta.json`, mai mutare l'index prima della decisione umana (canon ambiguo).
-- `copy-editor.md`: Identity: "You are the Copy Editor. You run ONE micro pass at a time on one file: style/voice, grammar, or spelling — the dispatch names the pass." Routine delle tre: style/voice = contro la style guide (+ `pilot.md` come ancora few-shot quando mode restyle): allinea alla voce senza appiattirla — stringa esatta `respect the voice: do not flatten intentional diction` (dittongo, dialetto, ripetizioni volute restano); grammar = morfo-sintassi, accordi, tempi verbali; spelling = ortografia + nomi propri (cross-check con glossario e index) — mai normalizzare verso una varietà linguistica non voluta del libro; Output: file corretto + registro della passata (`passes/registry-style.md`, `passes/registry-grammar.md`, `passes/registry-spelling.md`); Never: `do not write meta.json`, non toccare contenuti/struttura/canon, non fare interventi macro (fuori contratto), non cambiare lingua.
+- `copy-editor.md`: Identity: "You are the Copy Editor. You run ONE micro pass at a time on one file: style/voice, grammar, or spelling — the dispatch names the pass." Routine delle tre: style/voice = contro la style guide (+ `pilot.md` come ancora few-shot quando mode restyle): allinea alla voce senza appiattirla — stringa esatta `respect the voice: do not flatten intentional diction` (dittongo, dialetto, ripetizioni volute restano); grammar = morfo-sintassi, accordi, tempi verbali; spelling = ortografia + nomi propri (cross-check con glossario e index) — mai normalizzare verso una varietà linguistica non voluta del libro; Output: file corretto + frammento per-capitolo `passes/registry-<pass>/ch-NN.md` (MAI il registro della passata: `passes/registry-style.md` e compagni sono `aggregated by the orchestrator` a fine passata — Task 11); Never: `do not write meta.json`, non toccare contenuti/struttura/canon, non fare interventi macro (fuori contratto), non cambiare lingua.
 
 - [ ] **Step 4: Run → Expected: OK. Commit:**
 
@@ -1471,6 +1492,8 @@ E dentro `main`, dopo `check_links(errors)`: `check_role_paths(errors)`.
 [
     "one fresh subagent per chapter",
     "never the chapter's own drafter",
+    "nor its Phase 3 editor",
+    "gates.passes_approved: false",
     "reports/final-review/ch-",
     "reports/final-review.md",
     "degraded_non_independent",
@@ -1495,15 +1518,15 @@ Expected: `FAIL — 2 problem(s)` — `missing file: skills/book-forge/reference
 
 - [ ] **Step 4: Scrivere `final-review.md`** (spec: obiettivo 9; B4; W5):
 
-- `## Fresh-session rule`: fine fase 3 → `phase: "final_review"`; in modalità inline senza sessione nuova: setta `awaiting_fresh_session: true` e STOP HARD (annuncio all'utente: riprendere in una sessione nuova); il gate gira in sessione nuova che rilegge meta.json → questo file; override self-review solo su richiesta ESPLICITA dell'utente → `degraded_non_independent: true` (mai entrambi i flag, C3) e la marcatura finisce nel rapporto finale.
-- `## Per-chapter dispatches`: `one fresh subagent per chapter` (W5): dispatch del Final-reviewer (role path) per OGNI capitolo con input: capitolo + bibbia + righe facts-index del capitolo + registri rilevanti; `never the chapter's own drafter` — mai lo stesso agente che ha scritto/riscritto quel capitolo in fase 2; UN subagent NON accumula mai più capitoli in contesto; ogni subagent scrive `reports/final-review/ch-NN.md`.
-- `## Aggregate the reports`: l'orchestratore `aggregates the per-chapter reports only` — non ri-legge i capitoli: assembla `reports/final-review.md` (heading pinnato: Verdict per chapter; Unresolved markers; Style violations; Continuity breaks; Risk areas) + verdetto complessivo; se un capitolo NON supera → tornano le segnalazioni alle passate competenti (task 11) con la nota, prima di chiudere.
+- `## Fresh-session rule`: fine fase 3 → `phase: "final_review"`; in modalità inline senza sessione nuova: setta `awaiting_fresh_session: true` e STOP HARD (annuncio all'utente: riprendere in una sessione nuova); la sessione NUOVA si riconosce fresca (nessun turno di stesura/editing di questo libro nel proprio contesto), esegue `awaiting_fresh_session: false` e avvia il gate leggendo SOLO meta.json + questo file; con libri lunghi inline, i dispatch di review si frazionano in più sessioni fresche consecutive (mai accumulare N capitoli in un unico contesto inline); override self-review solo su richiesta ESPLICITA dell'utente → `degraded_non_independent: true` (mai entrambi i flag, C3) e la marcatura finisce nel rapporto finale.
+- `## Per-chapter dispatches`: `one fresh subagent per chapter` (W5): dispatch del Final-reviewer (role path) per OGNI capitolo con input: capitolo + bibbia + righe facts-index del capitolo + registri rilevanti; `never the chapter's own drafter` — mai lo stesso agente che ha scritto/riscritto quel capitolo in fase 2 — `nor its Phase 3 editor` (nemmeno l'editor specialista che l'ha toccato in fase 3); UN subagent NON accumula mai più capitoli in contesto; ogni subagent scrive `reports/final-review/ch-NN.md`.
+- `## Aggregate the reports`: l'orchestratore `aggregates the per-chapter reports only` — non ri-legge i capitoli: assembla `reports/final-review.md` (heading pinnato: Verdict per chapter; Unresolved markers; Style violations; Continuity breaks; Risk areas) + verdetto complessivo; se un capitolo NON supera: con conferma utente esplicita → retrocessione controllata `phase: "passes"` + `gates.passes_approved: false` → passata mirata sul capitolo + resync facts-index → nuovo Gate (b) → nuovo ingresso in `final_review` (in inline `awaiting_fresh_session` torna `true`: la sessione ha appena editato prosa).
 - `## User approval`: rapporto aggregato all'utente → approvazione finale → `gates.final_approved: true`, `phase: "export"`; se override degraded: rapportare `degraded_non_independent` come prima riga del rapporto finale.
 
 - [ ] **Step 5: Scrivere `roles/final-reviewer.md`**:
 
 - `## Identity`: "You are the Final Reviewer. You are a fresh pair of eyes on ONE chapter — you never wrote or edited this book."
-- `## Inputs`: capitolo, bibbia, righe facts-index pertinenti, registri passate; nient'altro (kk: "fresh context").
+- `## Inputs`: capitolo, bibbia, righe facts-index pertinenti, registri passate; nient'altro — `fresh context`.
 - `## Checks` (spec: gate finale): bibbia rispettata (canon/facts/voci); marker irrisolti (TODO/PLACEHOLDER/[...]); violazioni di stile contro la style guide; rotture di continuità (fatti/entità/promesse/thread in conflitto o mancanti); rispetto dei registri (le passate dichiarano fatto ciò che è fatto?).
 - `## Report contract`: `write only the report file` `reports/final-review/ch-NN.md` — formato pinnato: Verdict (pass|fail) + Finding list (una per riga, con provenienza [ch.NN]/bible §… + gravità) + suggested action per finding.
 - `## Never`: `never rewrite`/correggere la prosa; non toccare bibbia/index/registri; `do not write meta.json`; non guardare più capitoli (one chapter per dispatch).
@@ -1628,7 +1651,7 @@ git commit -m "feat(skill): pandoc export reference — EPUB 3 (Kindle Create) +
 - `## What it does`: 3 righe di cosa è (skill harness-agnostic per scrivere o correggere un libro intero: colloquio → bibbia → capitoli a gate umano → passate professionali → EPUB/DOCX; si ferma all'export).
 - `## The four jobs`: create / complete / revise / restyle — una riga ciascuna (spec obiettivo 1).
 - `## How it works`: pipeline 0–5 in 6 righe + albero del progetto libro + menzione che lo stato vive in meta.json e si può riprendere dopo mesi.
-- `## Install — skills.sh`: comando della spec (verbatim, con segnaposto owner): `npx skills add <owner>/book-forge` — NOTA: sostituire `<owner>` con l'owner reale GitHub al momento della pubblicazione.
+- `## Install — skills.sh`: comando della spec (verbatim, segnaposto owner): `npx skills add <owner>/book-forge@book-forge` — sostituire `<owner>` con l'owner reale GitHub alla pubblicazione; la `## Publishing checklist` verifica la sintassi live e, se il ref `@book-forge` non corrisponde al default del CLI, lo si allinea a publish-time.
 - `## Install — pi`: `git clone https://github.com/<owner>/book-forge ~/.agents/skills/book-forge` — pi scopre ricorsivamente ogni directory con `SKILL.md` sotto `~/.agents/skills/` (location Agent Skills supportata nativamente da pi ≥1.6.0).
 - `## Install — Claude Code`: `git clone https://github.com/<owner>/book-forge /tmp/book-forge && mkdir -p ~/.claude/skills && cp -r /tmp/book-forge/skills/book-forge ~/.claude/skills/` — oppure symlink.
 
@@ -1636,7 +1659,7 @@ N.d.B.: il nome del repo DEVE restare `book-forge` (skills.sh indicizza root/ski
 
 - `## Requirements`: nessuna per il nucleo (fasi 0–4); `pandoc is optional` — servire solo per ingestire .docx e per l'export EPUB/DOCX; per .pdf in ingest serve un estrattore di testo (la skill lo dichiara se manca). Node/Python NON servono all'utente: `tests/` e `pyproject.toml` sono tooling di sviluppo del repo.
 - `## Development`: clone → comando esatto `uv run tests/check.py` (uv ≥0.13, Python gestito da uv); indicare che i check congelano contratti (schema meta.json, header delle reference, warning W1–W5 come substrings) e che CI gira gli stessi.
-- `## Publishing checklist`: (1) sostituire `<owner>` nel README; (2) verificare live `npx skills add <owner>/book-forge` da macchina pulita; (3) tag release; (4) dogfood dry-run della skill (progetto toy) prima della pubblicazione — consigliato ma fuori dal piano.
+- `## Publishing checklist`: (1) sostituire `<owner>` nel README; (2) verificare live `npx skills add <owner>/book-forge@book-forge` da macchina pulita (e allineare il ref `@book-forge` se il CLI usa un default diverso); (3) tag release; (4) dogfood dry-run della skill (progetto toy) prima della pubblicazione — consigliato ma fuori dal piano.
 - Footer: licenza MIT con link a LICENSE.
 
 - [ ] **Step 4: Run → Expected: OK. Commit:**
@@ -1652,6 +1675,7 @@ git commit -m "docs: README — jobs, pipeline, install (skills.sh / pi / Claude
 
 - **Lingua dei file creati**: ENGLISH per skill e repo (Global Constraint 1). I .md della skill parlano all'agente ("you are…"), non all'utente finale.
 - **`uv run` sempre**: ogni invocazione di Python passa da `uv run` (es. Task 1 Step 5: `uv run python -c …`). MAI usare `python` da solo — sulla macchina di build è lo stub dello Store (`Python was not found`) — e MAI separare `python` dal prefisso `uv run` quando si copia un comando.
+- **Path inline-code ovunque + esecuzione strettamente sequenziale**: in TUTTI i `.md` della skill, ogni path `references/…` (inclusi i role file) si scrive come inline code tra backtick, MAI come hyperlink markdown `[…](…)`: le forward-reference (Task 5→6, 6→9, 8→9, 9→11) romperebbero `check_links`, e dentro `references/*.md` un hyperlink relativo si risolverebbe in `references/references/…`; i Task 1–15 si eseguono STRICTLY SEQUENTIAL — tutti modificano `tests/check.py` (registro condiviso), nessun dispatch in parallelo.
 - **Espansione contenutistica**: ogni sezione pinnata con 4–10 righe: il worker Espande in prosa inglese rispettando gli header esatti e le substring ancorate; la spec (collegata nel header del piano) è l'autorità semantica; i valori pinnati in tabella qui sono stringhe vincolanti.
 - **Autocontrollo del worker**: dopo ogni task, il grep delle substring PInnate deve funzionare; contestualmente rileggere il report contro il diff (regola AGENTS.md: claim con file:linea).
 - **Il committ finale del piano**: `git commit -m "docs: implementation plan…" NON serve` — il piano è già committato dall'orchestratore; i task sopra partono dal commit con la spec congelata.
@@ -1669,3 +1693,12 @@ git commit -m "docs: README — jobs, pipeline, install (skills.sh / pi / Claude
   - **Task 4 Step 4 (R2-1)** — `meta-invalid-bad-enum.json`: `"web_available": false` (era `null`): con l'enum invalido di `phase` scatta SOLO l'errore di enum dello schema; prima la notazione violava anche C4 e il motivo di rifiuto non era esclusivo. Aggiunta nota a piè della notazione.
   - **N1** — chiarimento: le etichette W2…W5 usate nel Changelog dell'Amendamento 1 si riferiscono ai finding f2…f5 del round 1 di plan-validator, NON ai warning oracle W1–W5 (che restano gli ID della tabella «Warning oracle → task» in testa al piano).
   - **N2** — refuso corretto nel Changelog dell'Amendamento 1 («voi link relativi» → «con link relativi»).
+- **2026-11-25 · Amendamento 3** (da oracle freeze piano round 1 — verdetto FREEZE BLOCCATO: 3 blocker + 4 warning; verdetto integrale: `docs/superpowers/plans/2026-11-25-oracle-plan-freeze-verdict.md`):
+  - **Blocker O1 — C8/routing ingestione** — Task 4 Step 2: C8 scatta SOLO da Gate 1 in poi (`phase not in ("intake","bible") or bible_approved`), così lo stato legittimo `phase: "bible"` con capitoli non ancora importati non è più bocciato; Task 3: routing `phase × work_mode` esplicito per la fase `bible` (create→bible.md; esistenti senza capitoli→ingest.md; con capitoli importati→reconstruction.md) + substring `references/ingest.md` in SKILL.md; Task 4 Step 6 state.md: regola 9 (risoluzione `<phase>` via tabella, mai nome letterale); Task 7 bible.md: riga di redirect per work_mode ≠ create; Task 5: `chapters: []` chiarito per OGNI work_mode.
+  - **Blocker O2 — contratto mode complete** — Task 9: lo sweep estrae anche sintesi purpose/beat → `outline.md` assemblato sui capitoli importati + handoff window degli ultimi K capitoli importati; Gate 1 (complete/revise): la style guide descrittiva diventa NORMATIVA con la validazione utente; in complete il Gate 1 approva anche i contratti M+1..N (integrati col colloquio) e, conclusa la stabilizzazione, l'orchestratore registra M+1..N (`planned`, `written`) PRIMA di `phase: "chapters"`; Task 7 Gate 1: init `chapters` 1..N da outline (create); Task 10 Closing: all'ultimo `approved` → `phase: "passes"` + init `pass_scope`/`pass_progress` per C6.
+  - **Blocker O3 — race sui registri paralleli** — Task 11 + Task 12: i subagenti paralleli scrivono SOLO il frammento `passes/registry-<pass>/ch-NN.md`; il registro della passata è `aggregated by the orchestrator` a fine passata (ordine 01..NN); output contract del copy-editor aggiornato.
+  - **Warning O4 — window e sweep** — Task 8/11: ogni passata sequenziale RICOSTRUISCE la window come sliding window della passata in corso; registri con sezione `stabilization (phase 1)` distinta dalla fase 3; Task 8/9: ammessa popolazione PROVISIONAL pre-Gate-1 di facts-index (Status `provisional`) + `research/reconstruction-notes.md` passate in input a ogni dispatch Duty B (il capitolo 12 vede i fatti del 04 senza caricare i capitoli precedenti).
+  - **Warning O5 — economia di contesto in ingest + esecutore pilota** — Task 6: split basato su heading search/line ranges, MAI lettura integrale di `research/manuscript-raw.md` in contesto LLM; Task 9 restyle: pilota prodotto da dispatch di copy-editor (inline code) con round-trip fino a approvazione Gate 1.
+  - **Warning O6 — transizioni fase 4 e invarianti** — state.md regole 3 e 8 estese (riconoscimento sessione fresca + retrocessione controllata final_review→passes + batching inline su più sessioni fresche); final-review: esclude anche `nor its Phase 3 editor` dello stesso capitolo; C5 esteso a tutte le fasi post-stabilizzazione (vieta di retrocedere da `done`); C7 vieta `planned` da `passes` in poi; passes.md: guardia STOP-file aperti (B1) + dispatch mirato sul capitolo precedente.
+  - **Warning O7 — igiene di esecuzione e portabilità** — Note di esecuzione: path inline-code GLOBALI (forward-reference Task 5→6/6→9/8→9/9→11) e Task 1–15 STRICTLY SEQUENTIAL; drafting.md fallback one-shot stateless di `the same drafter` (la continuità vive nei file, non nell'istanza); slug ASCII con translitterazione (fallback `chapter-NN`); regex `project.language` allargata a `^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$` (accetta BCP-47 tipo `zh-Hans`, `es-419`); README allineato al comando spec `npx skills add <owner>/book-forge@book-forge` con verifica ref a publish-time; refusi residui puliti (Task 6 «Aggiornare… NO:», Task 13 «kk:").
+  - **Impatto fixture: zero** — nessuna delle 12 fixture cambia esito o motivo esclusivo di rifiuto (desk-check: complete è `phase: bible`; nessuna valida ha `planned` in fasi post-capitoli; le C5/C7 estese aggiungono solo vincoli a stati finora non campionati).

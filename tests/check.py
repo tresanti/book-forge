@@ -20,6 +20,7 @@ REQUIRED_FILES: list[str] = [
     "skills/book-forge/references/intake.md",
     "skills/book-forge/references/ingest.md",
     "skills/book-forge/references/bible.md",
+    "skills/book-forge/references/ledger.md",
 ]
 
 REQUIRED_HEADERS: dict[str, list[str]] = {
@@ -66,6 +67,12 @@ REQUIRED_HEADERS: dict[str, list[str]] = {
         "## outline.md format",
         "## Chapter length heuristic",
         "## Gate 1 — approve the bible",
+    ],
+    "skills/book-forge/references/ledger.md": [
+        "## facts-index.md",
+        "## Handoff window",
+        "## Update after each approved chapter",
+        "## Change discipline",
     ],
 }
 
@@ -116,6 +123,14 @@ REQUIRED_SUBSTRINGS: dict[str, list[str]] = {
         "[min]",
         "[opt]",
         "gates.bible_approved",
+    ],
+    "skills/book-forge/references/ledger.md": [
+        "| ID | Type | Fact or statement | Established | Source | Status |",
+        "[ch.NN]",
+        "superseded",
+        "the last K approved chapters",
+        "never mutate the index before a user decision",
+        "PROVISIONAL",
     ],
 }
 
